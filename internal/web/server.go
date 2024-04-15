@@ -45,7 +45,12 @@ func imagesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	imageData := images.GetImagesView(data)
 
-	tmpl.Execute(w, imageData)
+	err = tmpl.Execute(w, imageData)
+	if err != nil {
+		log.Logger.Error("encountered error executing image html template", "error", err)
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
 }
 
 func imageHandler(w http.ResponseWriter, r *http.Request) {
@@ -118,5 +123,10 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	view = images.SortImageVulnerabilityView(view)
 
-	tmpl.Execute(w, view)
+	err = tmpl.Execute(w, view)
+	if err != nil {
+		log.Logger.Error("encountered error executing image html template", "error", err)
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
 }
