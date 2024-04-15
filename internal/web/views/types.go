@@ -1,4 +1,4 @@
-package images
+package views
 
 // ImagesView contains data about images running in a kubernetes cluster with vulnerabilities
 type ImagesView struct {

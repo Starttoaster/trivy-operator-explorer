@@ -1,4 +1,4 @@
-package images
+package views
 
 import (
 	"fmt"
@@ -10,8 +10,10 @@ import (
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
 )
 
+// TrivyImageVulnerabilityMetricName the metric key for image vulnerability data
 const TrivyImageVulnerabilityMetricName = "trivy_vulnerability_id"
 
+// GetImagesView converts some scrape data to the /images view
 func GetImagesView(data *scraper.ScrapeData) ImagesView {
 	var i ImagesView
 	i.Images = make(map[Image]ImageData)

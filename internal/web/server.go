@@ -8,8 +8,8 @@ import (
 
 	scraper "github.com/starttoaster/prometheus-exporter-scraper"
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
-	"github.com/starttoaster/trivy-operator-explorer/internal/views/images"
 	"github.com/starttoaster/trivy-operator-explorer/internal/web/content"
+	"github.com/starttoaster/trivy-operator-explorer/internal/web/views"
 )
 
 var scrpr *scraper.WebScraper
@@ -43,11 +43,11 @@ func imagesHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	imageData := images.GetImagesView(data)
+	imageData := views.GetImagesView(data)
 
 	err = tmpl.Execute(w, imageData)
 	if err != nil {
-		log.Logger.Error("encountered error executing image html template", "error", err)
+		log.Logger.Error("encountered error executing images html template", "error", err)
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
 		return
 	}
@@ -66,7 +66,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	imageData := images.GetImagesView(data)
+	imageData := views.GetImagesView(data)
 
 	// Parse URL query params
 	q := r.URL.Query()
@@ -84,7 +84,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	v, ok := imageData.Images[images.Image{
+	v, ok := imageData.Images[views.Image{
 		Image:  imageName,
 		Digest: imageDigest,
 	}]
@@ -98,7 +98,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 	severity := q.Get("severity")
 
 	// Get vulnerability list that matches severity, if specified
-	view := images.ImageVulnerabilityView{
+	view := views.ImageVulnerabilityView{
 		Image:  imageName,
 		Digest: imageDigest,
 	}
@@ -109,9 +109,9 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// append to data list to pass to template
-		view.Data = append(view.Data, images.ImageVulnerabilityData{
+		view.Data = append(view.Data, views.ImageVulnerabilityData{
 			ID: id,
-			Vulnerability: images.Vulnerability{
+			Vulnerability: views.Vulnerability{
 				Severity:          vuln.Severity,
 				Score:             vuln.Score,
 				Resource:          vuln.Resource,
@@ -121,7 +121,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 			},
 		})
 	}
-	view = images.SortImageVulnerabilityView(view)
+	view = views.SortImageVulnerabilityView(view)
 
 	err = tmpl.Execute(w, view)
 	if err != nil {
