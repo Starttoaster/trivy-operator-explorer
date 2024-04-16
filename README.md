@@ -1,8 +1,10 @@
 # Trivy Operator Explorer
 
-This is a web explorer that scrapes the data exported by the [Trivy Operator for Kubernetes.](https://github.com/aquasecurity/trivy-operator) The Trivy Operator exports a LOT of metrics about vulnerabilities in a kubernetes cluster; so many that some people may consider not storing all of that in Prometheus because metrics with high levels of cardinality in label sets can cause query performance issues. Because of this, instead of relying on Prometheus to scrape the metrics, and have this query Prometheus, this explorer scrapes the operator's metrics itself and parses it for dashboarding.
+This is a web explorer that scrapes the data exported by the [Trivy Operator for Kubernetes.](https://github.com/aquasecurity/trivy-operator) This image runs as a single binary in a distroless container image, which means it's an extremely small footprint on your cluster too.
 
-Note that this only reports image vulnerabilities for the time being. The Trivy Operator exports many other metrics, which will be added to this explorer over time.
+The Trivy Operator exports a LOT of metrics about vulnerabilities in a kubernetes cluster; so many that some may consider not storing all of that in Prometheus at all. Because of this, instead of querying Prometheus, this explorer scrapes the operator's metrics exporter itself and parses it for dashboarding. 
+
+Note that this only reports image vulnerabilities for the time being. The Trivy Operator exports many other metrics, including reporting on potentially insecure Roles or ClusterRoles, which will be added to this explorer over time.
 
 ## Preview
 
@@ -80,8 +82,7 @@ There are query parameters for image and digest as well, but it's not expected f
 
 - Graphical elements for setting filters, currently they're just URL query parameters.
 - Add Role/ClusterRole vulnerabilities to the dashboard.
+- Add exposed secrets scan results to dashboard.
 - Support different vulnerability IDs - currently GHSA vulnerabilities link to NIST just like normal CVEs, where NIST 404s.
 - Add ability to connect to cluster to check for images or roles not scanned yet.
-- Find out more about exposed secrets scanning. Add it to the dashboard?
-- Does a JSON API make sense for this? Is there a use case for it?
-- Testing. Pretty sure by law no new product has testing and it gets added later.
+- Testing. Pretty sure by law no new product can have tests.
