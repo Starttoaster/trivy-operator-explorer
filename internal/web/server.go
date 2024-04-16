@@ -61,17 +61,10 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get scrape data from exporter
-	data, err := scrapeImageData(w)
-	if err != nil {
-		return
-	}
-	imageData := views.GetImagesView(data)
-
 	// Parse URL query params
 	q := r.URL.Query()
 
-	// Check image query params -- 404 if not found in image data, or param not passed
+	// Check query params -- 404 if required params not passed
 	imageName := q.Get("image")
 	if imageName == "" {
 		log.Logger.Error("image name query param missing from request")
@@ -84,6 +77,17 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	severity := q.Get("severity")
+	hasFix := q.Get("hasfix")
+	resources := q.Get("resources")
+	notResources := q.Get("notresources")
+
+	// Get scrape data from exporter
+	data, err := scrapeImageData(w)
+	if err != nil {
+		return
+	}
+	imageData := views.GetImagesView(data)
 	v, ok := imageData.Images[views.Image{
 		Image:  imageName,
 		Digest: imageDigest,
@@ -94,10 +98,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check severity query param if it exists
-	severity := q.Get("severity")
-
-	// Get vulnerability list that matches severity, if specified
+	// Get vulnerability list that matches filters
 	view := views.ImageVulnerabilityView{
 		Image:  imageName,
 		Digest: imageDigest,
@@ -108,17 +109,38 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
+		// Filter if no fix version if hasfix=true
+		if strings.EqualFold(hasFix, "true") && vuln.FixedVersion == "" {
+			continue
+		}
+
+		// Filter if a fix version if hasfix=false
+		if strings.EqualFold(hasFix, "false") && vuln.FixedVersion != "" {
+			continue
+		}
+
+		// Filter if vulnerability resource does not equal resource in resources list
+		if resources != "" {
+			filters := strings.Split(resources, ",")
+			found := filterByList(filters, vuln.Resource)
+			if !found {
+				continue
+			}
+		}
+
+		// Filter if vulnerability resource equals specified resource in the notresource list
+		if notResources != "" {
+			filters := strings.Split(notResources, ",")
+			found := filterByList(filters, vuln.Resource)
+			if found {
+				continue
+			}
+		}
+
 		// append to data list to pass to template
 		view.Data = append(view.Data, views.ImageVulnerabilityData{
-			ID: id,
-			Vulnerability: views.Vulnerability{
-				Severity:          vuln.Severity,
-				Score:             vuln.Score,
-				Resource:          vuln.Resource,
-				Title:             vuln.Title,
-				VulnerableVersion: vuln.VulnerableVersion,
-				FixedVersion:      vuln.FixedVersion,
-			},
+			ID:            id,
+			Vulnerability: vuln,
 		})
 	}
 	view = views.SortImageVulnerabilityView(view)
@@ -129,4 +151,15 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
 		return
 	}
+}
+
+func filterByList(filters []string, item string) bool {
+	var found bool
+	for _, filter := range filters {
+		if strings.EqualFold(filter, item) {
+			found = true
+			break
+		}
+	}
+	return found
 }
