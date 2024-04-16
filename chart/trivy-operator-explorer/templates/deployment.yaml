@@ -5,9 +5,7 @@ metadata:
   labels:
     {{- include "trivy-operator-explorer.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
-  {{- end }}
   selector:
     matchLabels:
       {{- include "trivy-operator-explorer.selectorLabels" . | nindent 6 }}
