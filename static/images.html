@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="/static/css/output.css" rel="stylesheet">
+  <link href="/static/css/extra.css" rel="stylesheet">
+</head>
+<body class="min-h-screen bg-indigo-900">
+     
+    <!-- Sidebar -->
+    <aside id="default-sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0" aria-label="Sidebar">
+        <div class="h-full px-3 py-4 overflow-y-auto bg-gray-50 dark:bg-indigo-950">
+            <a href="/" class="flex items-center ps-2.5 mb-5">
+                <span class="self-center text-xl font-semibold whitespace-nowrap dark:text-white">Trivy Operator Explorer</span>
+            </a>
+           <ul class="space-y-2 font-medium">
+              <li>
+                 <a href="/" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
+                    <svg class="w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 22 21">
+                       <path d="M16.975 11H10V4.025a1 1 0 0 0-1.066-.998 8.5 8.5 0 1 0 9.039 9.039.999.999 0 0 0-1-1.066h.002Z"/>
+                       <path d="M12.5 0c-.157 0-.311.01-.565.027A1 1 0 0 0 11 1.02V10h8.975a1 1 0 0 0 1-.935c.013-.188.028-.374.028-.565A8.51 8.51 0 0 0 12.5 0Z"/>
+                    </svg>
+                    <span class="ms-3">Images</span>
+                 </a>
+              </li>
+           </ul>
+        </div>
+    </aside>
+
+    <!-- Table content -->
+    <div class="p-4 sm:ml-64 bg-indigo-900">
+        <div class="relative overflow-x-auto shadow-md rounded-lg">
+            <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                <!-- Table headers -->
+                <thead class="rounded-lg text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <th scope="col" class="px-6 py-3">
+                            Image
+                        </th>
+                        <th scope="col" class="px-6 py-3">
+                            Affected Pods
+                        </th>
+                        <th scope="col" class="px-6 py-3">
+                            Vulnerabilities
+                        </th>
+                    </tr>
+                </thead>
+                <!-- Table body -->
+                <tbody>
+                    {{ range $image, $data := .Images }}
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                        <!-- Image column -->
+                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            <a href="/image?image={{ $image.Image }}&digest={{ $image.Digest }}" title="{{ $image.Digest }}">
+                                {{ $image.Image }}
+                            </a>
+                        </th>
+                        <!-- Affected Pods column -->
+                        <td class="px-6 py-4">
+                            <div class="dropdown shadow-md relative rounded-lg">
+                                <button id="podDropdownButton" data-dropdown-toggle="dropdown" class="dark:text-white bg-blue-800 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-800 dark:hover:bg-blue-700 dark:focus:ring-blue-800" type="button">
+                                    {{ len $data.Pods }}
+                                    <svg class="w-2.5 h-2.5 ms-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/>
+                                    </svg>
+                                </button>
+                                <div class="dropdown-content shadow-md relative rounded-lg">
+                                    <ul class="px-1 py-1 rounded-lg text-lg font-medium text-white dark:text-white dark:bg-indigo-800 dark:border-gray-700" aria-labelledby="dropdownDefaultButton">
+                                        {{ range $podData, $nada := $data.Pods }}
+                                        <li>
+                                          <a href="#" class="block dark:hover:bg-indigo-900">{{ $podData.Namespace }}/{{ $podData.Pod }}</a>
+                                        </li>
+                                        {{ end }}
+                                    </ul>
+                                </div>
+                            </div>
+                        </td>
+                        <!-- Vulnerabilities column -->
+                        <td class="px-6 py-4">
+                            {{ if ne $data.CriticalVulnerabilities 0 }}
+                            <a href="/image?image={{ $image.Image }}&digest={{ $image.Digest }}&severity=Critical" title="Critical" class="bg-red-100 text-red-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-red-900 dark:text-red-100">
+                                {{ $data.CriticalVulnerabilities }}
+                            </a>
+                            {{ end }}
+                            {{ if ne $data.HighVulnerabilities 0 }}
+                            <a href="/image?image={{ $image.Image }}&digest={{ $image.Digest }}&severity=High" title="High" class="bg-orange-100 text-orange-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-orange-900 dark:text-orange-100">
+                                {{ $data.HighVulnerabilities }}
+                            </a>
+                            {{ end }}
+                            {{ if ne $data.MediumVulnerabilities 0 }}
+                            <a href="/image?image={{ $image.Image }}&digest={{ $image.Digest }}&severity=Medium" title="Medium" class="bg-yellow-100 text-yellow-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-yellow-900 dark:text-yellow-100">
+                                {{ $data.MediumVulnerabilities }}
+                            </a>
+                            {{ end }}
+                            {{ if ne $data.LowVulnerabilities 0 }}
+                            <a href="/image?image={{ $image.Image }}&digest={{ $image.Digest }}&severity=Low" title="Low" class="bg-blue-100 text-blue-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-blue-900 dark:text-blue-100">
+                                {{ $data.LowVulnerabilities }}
+                            </a>
+                            {{ end }}
+                        </td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
