@@ -10,9 +10,6 @@ import (
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
 )
 
-// TrivyImageVulnerabilityMetricName the metric key for image vulnerability data
-const TrivyImageVulnerabilityMetricName = "trivy_vulnerability_id"
-
 // GetImagesView converts some scrape data to the /images view
 func GetImagesView(data *scraper.ScrapeData) ImagesView {
 	var i ImagesView
@@ -26,9 +23,9 @@ func GetImagesView(data *scraper.ScrapeData) ImagesView {
 			if gauge.Labels["image_registry"] == "index.docker.io" {
 				// If Docker Hub, trim the registry prefix for readability
 				// Also trims `library/` from the prefix of the image name, which is a hidden username for Docker Hub official images
-				image.Image = fmt.Sprintf("%s:%s", strings.TrimPrefix(gauge.Labels["image_repository"], "library/"), gauge.Labels["image_tag"])
+				image.Name = fmt.Sprintf("%s:%s", strings.TrimPrefix(gauge.Labels["image_repository"], "library/"), gauge.Labels["image_tag"])
 			} else {
-				image.Image = fmt.Sprintf("%s/%s:%s", gauge.Labels["image_registry"], gauge.Labels["image_repository"], gauge.Labels["image_tag"])
+				image.Name = fmt.Sprintf("%s/%s:%s", gauge.Labels["image_registry"], gauge.Labels["image_repository"], gauge.Labels["image_tag"])
 			}
 			image.Digest = gauge.Labels["image_digest"]
 			podData := PodMetadata{
@@ -42,7 +39,7 @@ func GetImagesView(data *scraper.ScrapeData) ImagesView {
 					log.Logger.Error("could not convert string to float32",
 						"error", err.Error(),
 						"score", gauge.Labels["vuln_score"],
-						"image", image.Image,
+						"image", image.Name,
 					)
 					continue
 				}
@@ -76,6 +73,8 @@ func GetImagesView(data *scraper.ScrapeData) ImagesView {
 				podMap := make(map[PodMetadata]struct{})
 				vulnMap := make(map[string]Vulnerability)
 				imageData := ImageData{
+					Name:            image.Name,
+					Digest:          image.Digest,
 					Vulnerabilities: vulnMap,
 					Pods:            podMap,
 				}
@@ -87,6 +86,7 @@ func GetImagesView(data *scraper.ScrapeData) ImagesView {
 	}
 
 	i = setImagesViewVulnerabilityCounters(i)
+	i = sortImagesView(i)
 
 	return i
 }
@@ -107,6 +107,31 @@ func setImagesViewVulnerabilityCounters(i ImagesView) ImagesView {
 			i.Images[k] = v
 		}
 	}
+	return i
+}
+
+func sortImagesView(i ImagesView) ImagesView {
+	for _, v := range i.Images {
+		i.SortedImages = append(i.SortedImages, v)
+	}
+
+	// Sort the slice by severity in descending order
+	sort.Slice(i.SortedImages, func(j, k int) bool {
+		if i.SortedImages[j].CriticalVulnerabilities != i.SortedImages[k].CriticalVulnerabilities {
+			return i.SortedImages[j].CriticalVulnerabilities > i.SortedImages[k].CriticalVulnerabilities
+		}
+
+		if i.SortedImages[j].HighVulnerabilities != i.SortedImages[k].HighVulnerabilities {
+			return i.SortedImages[j].HighVulnerabilities > i.SortedImages[k].HighVulnerabilities
+		}
+
+		if i.SortedImages[j].MediumVulnerabilities != i.SortedImages[k].MediumVulnerabilities {
+			return i.SortedImages[j].MediumVulnerabilities > i.SortedImages[k].MediumVulnerabilities
+		}
+
+		return i.SortedImages[j].LowVulnerabilities > i.SortedImages[k].LowVulnerabilities
+	})
+
 	return i
 }
 

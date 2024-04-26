@@ -2,17 +2,20 @@ package views
 
 // ImagesView contains data about images running in a kubernetes cluster with vulnerabilities
 type ImagesView struct {
-	Images map[Image]ImageData
+	Images       map[Image]ImageData
+	SortedImages []ImageData
 }
 
 // Image contains data about an image
 type Image struct {
-	Image  string
+	Name   string
 	Digest string
 }
 
 // ImageData contains data about image vulnerabilities and metadata about the Pods running those images
 type ImageData struct {
+	Name                    string
+	Digest                  string
 	Pods                    map[PodMetadata]struct{}
 	Vulnerabilities         map[string]Vulnerability
 	CriticalVulnerabilities int
@@ -45,11 +48,10 @@ type Vulnerability struct {
 
 // ImageVulnerabilityView contains the view data for the `/image` server path
 type ImageVulnerabilityView struct {
-	// Image is the name of the image containing vulnerabilities
-	Image string
+	// Name is the name of the image containing vulnerabilities
+	Name string
 	// Digest is the string image hash
 	Digest string
-
 	// Data contains a slice of all the vulnerabilities for the given image
 	Data []ImageVulnerabilityData
 }

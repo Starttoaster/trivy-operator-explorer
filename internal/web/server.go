@@ -89,7 +89,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	imageData := views.GetImagesView(data)
 	v, ok := imageData.Images[views.Image{
-		Image:  imageName,
+		Name:   imageName,
 		Digest: imageDigest,
 	}]
 	if !ok {
@@ -100,7 +100,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Get vulnerability list that matches filters
 	view := views.ImageVulnerabilityView{
-		Image:  imageName,
+		Name:   imageName,
 		Digest: imageDigest,
 	}
 	for id, vuln := range v.Vulnerabilities {
