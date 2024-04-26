@@ -7,7 +7,7 @@ const (
 	// TrivyImageInfoMetricName gives info on the images running in the cluster like base distro
 	TrivyImageInfoMetricName = "trivy_image_info"
 
-	// TrivyRbacAssessmentInfoMetricName gives info on potentially over-giving rbac Roles/ClusterRoles
+	// TrivyRbacAssessmentMetricName gives info on potentially over-giving rbac Roles/ClusterRoles
 	TrivyRbacAssessmentMetricName = "trivy_rbacassessments_info"
 
 	// TrivyRbacAssessmentCountersMetricName gives counters of rbac issues for each Role/ClusterRole by severity
