@@ -15,7 +15,7 @@ func GetRolesView(data *scraper.ScrapeData) RolesView {
 		if gauge.Key == views.TrivyRbacAssessmentMetricName {
 			// TODO -- grab each label into variables individually and check that they're not empty
 			// Construct all data types from metric data
-			role := RoleData{
+			role := Data{
 				Name:      gauge.Labels["name"],
 				Namespace: gauge.Labels["namespace"],
 				Kind:      gauge.Labels["resource_kind"],

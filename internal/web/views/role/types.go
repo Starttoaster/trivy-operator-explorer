@@ -1,9 +1,10 @@
 package role
 
-type RolesView []RoleData
+// RolesView a list of data about role vulnerabilities
+type RolesView []Data
 
-// RoleData data about a role and its vulnerabilities
-type RoleData struct {
+// Data data about a role and its vulnerabilities
+type Data struct {
 	Name                    string
 	Namespace               string
 	Kind                    string
