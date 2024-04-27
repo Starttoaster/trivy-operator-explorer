@@ -9,7 +9,7 @@ import (
 	scraper "github.com/starttoaster/prometheus-exporter-scraper"
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
 	"github.com/starttoaster/trivy-operator-explorer/internal/web/content"
-	"github.com/starttoaster/trivy-operator-explorer/internal/web/views"
+	imageview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/image"
 )
 
 var scrpr *scraper.WebScraper
@@ -26,6 +26,7 @@ func Start(port string, metricsURL string) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", imagesHandler)
 	mux.HandleFunc("/image", imageHandler)
+	mux.HandleFunc("/roles", rolesHandler)
 	mux.Handle("/static/", http.FileServer(http.FS(content.Static)))
 	return http.ListenAndServe(fmt.Sprintf(":%s", port), mux)
 }
@@ -43,7 +44,7 @@ func imagesHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	imageData := views.GetImagesView(data)
+	imageData := imageview.GetImagesView(data)
 
 	err = tmpl.Execute(w, imageData)
 	if err != nil {
@@ -87,8 +88,8 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	imageData := views.GetImagesView(data)
-	v, ok := imageData.Images[views.Image{
+	imageData := imageview.GetImagesView(data)
+	v, ok := imageData.Images[imageview.Image{
 		Name:   imageName,
 		Digest: imageDigest,
 	}]
@@ -99,7 +100,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get vulnerability list that matches filters
-	view := views.ImageVulnerabilityView{
+	view := imageview.ImageVulnerabilityView{
 		Name:               imageName,
 		Digest:             imageDigest,
 		OSFamily:           v.OSFamily,
@@ -141,12 +142,12 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// append to data list to pass to template
-		view.Data = append(view.Data, views.ImageVulnerabilityData{
+		view.Data = append(view.Data, imageview.ImageVulnerabilityData{
 			ID:            id,
 			Vulnerability: vuln,
 		})
 	}
-	view = views.SortImageVulnerabilityView(view)
+	view = imageview.SortImageVulnerabilityView(view)
 
 	err = tmpl.Execute(w, view)
 	if err != nil {
@@ -165,4 +166,27 @@ func filterByList(filters []string, item string) bool {
 		}
 	}
 	return found
+}
+
+func rolesHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFS(content.Static, "static/roles.html"))
+	if tmpl == nil {
+		log.Logger.Error("encountered error parsing images html template")
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+
+	// Get scrape data from exporter
+	data, err := scrapeImageData(w)
+	if err != nil {
+		return
+	}
+	imageData := imageview.GetImagesView(data)
+
+	err = tmpl.Execute(w, imageData)
+	if err != nil {
+		log.Logger.Error("encountered error executing images html template", "error", err)
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
 }

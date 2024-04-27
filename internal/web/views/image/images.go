@@ -8,6 +8,7 @@ import (
 
 	scraper "github.com/starttoaster/prometheus-exporter-scraper"
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
+	"github.com/starttoaster/trivy-operator-explorer/internal/web/views"
 )
 
 // GetImagesView converts some scrape data to the /images view
@@ -16,7 +17,7 @@ func GetImagesView(data *scraper.ScrapeData) ImagesView {
 	i.Images = make(map[Image]ImageData)
 
 	for _, gauge := range data.Gauges {
-		if gauge.Key == TrivyImageVulnerabilityMetricName {
+		if gauge.Key == views.TrivyImageVulnerabilityMetricName {
 			// TODO -- grab each label into variables individually and check that they're not empty
 			// Construct all data types from metric data
 			image := Image{
@@ -81,7 +82,7 @@ func GetImagesView(data *scraper.ScrapeData) ImagesView {
 	}
 
 	for _, gauge := range data.Gauges {
-		if gauge.Key == TrivyImageInfoMetricName {
+		if gauge.Key == views.TrivyImageInfoMetricName {
 			image := Image{
 				Name:   getImageNameFromLabels(gauge),
 				Digest: gauge.Labels["image_digest"],

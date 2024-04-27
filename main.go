@@ -9,6 +9,7 @@ import (
 
 //go:generate tailwindcss build -i ./static/css/input.css -o ./static/css/output.css
 
+//go:embed static/roles.html
 //go:embed static/images.html
 //go:embed static/image.html
 //go:embed static/css/output.css
