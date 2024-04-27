@@ -10,6 +10,7 @@ import (
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
 	"github.com/starttoaster/trivy-operator-explorer/internal/web/content"
 	imageview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/image"
+	roleview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/role"
 )
 
 var scrpr *scraper.WebScraper
@@ -181,9 +182,9 @@ func rolesHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	imageData := imageview.GetImagesView(data)
+	roles := roleview.GetRolesView(data)
 
-	err = tmpl.Execute(w, imageData)
+	err = tmpl.Execute(w, roles)
 	if err != nil {
 		log.Logger.Error("encountered error executing images html template", "error", err)
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
