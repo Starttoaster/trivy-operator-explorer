@@ -19,15 +19,10 @@ func GetImagesView(data *scraper.ScrapeData) ImagesView {
 		if gauge.Key == TrivyImageVulnerabilityMetricName {
 			// TODO -- grab each label into variables individually and check that they're not empty
 			// Construct all data types from metric data
-			var image Image
-			if gauge.Labels["image_registry"] == "index.docker.io" {
-				// If Docker Hub, trim the registry prefix for readability
-				// Also trims `library/` from the prefix of the image name, which is a hidden username for Docker Hub official images
-				image.Name = fmt.Sprintf("%s:%s", strings.TrimPrefix(gauge.Labels["image_repository"], "library/"), gauge.Labels["image_tag"])
-			} else {
-				image.Name = fmt.Sprintf("%s/%s:%s", gauge.Labels["image_registry"], gauge.Labels["image_repository"], gauge.Labels["image_tag"])
+			image := Image{
+				Name:   getImageNameFromLabels(gauge),
+				Digest: gauge.Labels["image_digest"],
 			}
-			image.Digest = gauge.Labels["image_digest"]
 			podData := PodMetadata{
 				Pod:       gauge.Labels["resource_name"],
 				Namespace: gauge.Labels["namespace"],
@@ -85,6 +80,22 @@ func GetImagesView(data *scraper.ScrapeData) ImagesView {
 		}
 	}
 
+	for _, gauge := range data.Gauges {
+		if gauge.Key == TrivyImageInfoMetricName {
+			image := Image{
+				Name:   getImageNameFromLabels(gauge),
+				Digest: gauge.Labels["image_digest"],
+			}
+
+			if data, ok := i.Images[image]; ok {
+				data.OSFamily = gauge.Labels["image_os_family"]
+				data.OSVersion = gauge.Labels["image_os_name"]
+				data.OSEndOfServiceLife = gauge.Labels["image_os_eosl"]
+				i.Images[image] = data
+			}
+		}
+	}
+
 	i = setImagesViewVulnerabilityCounters(i)
 	i = sortImagesView(i)
 
@@ -135,49 +146,11 @@ func sortImagesView(i ImagesView) ImagesView {
 	return i
 }
 
-// SortImageVulnerabilityView sorts the provided ImageVulnerabilityView's data slice
-func SortImageVulnerabilityView(v ImageVulnerabilityView) ImageVulnerabilityView {
-	// Sort by vulnerability severity separately
-	// Because sometimes low or other tier vulnerabilities also have high scores
-	var (
-		crit []ImageVulnerabilityData
-		high []ImageVulnerabilityData
-		med  []ImageVulnerabilityData
-		low  []ImageVulnerabilityData
-	)
-	for _, data := range v.Data {
-		switch data.Severity {
-		case "Critical":
-			crit = append(crit, data)
-		case "High":
-			high = append(high, data)
-		case "Medium":
-			med = append(med, data)
-		case "Low":
-			low = append(low, data)
-		}
+func getImageNameFromLabels(gauge scraper.PrometheusGaugeMetric) string {
+	if gauge.Labels["image_registry"] == "index.docker.io" {
+		// If Docker Hub, trim the registry prefix for readability
+		// Also trims `library/` from the prefix of the image name, which is a hidden username for Docker Hub official images
+		return fmt.Sprintf("%s:%s", strings.TrimPrefix(gauge.Labels["image_repository"], "library/"), gauge.Labels["image_tag"])
 	}
-
-	// Sort each severity tier by score separately
-	sort.SliceStable(crit, func(i, j int) bool {
-		return crit[i].Score > crit[j].Score
-	})
-	sort.SliceStable(high, func(i, j int) bool {
-		return high[i].Score > high[j].Score
-	})
-	sort.SliceStable(med, func(i, j int) bool {
-		return med[i].Score > med[j].Score
-	})
-	sort.SliceStable(low, func(i, j int) bool {
-		return low[i].Score > low[j].Score
-	})
-
-	// Combine now to one mega slice
-	var data []ImageVulnerabilityData
-	data = append(data, crit...)
-	data = append(data, high...)
-	data = append(data, med...)
-	data = append(data, low...)
-	v.Data = data
-	return v
+	return fmt.Sprintf("%s/%s:%s", gauge.Labels["image_registry"], gauge.Labels["image_repository"], gauge.Labels["image_tag"])
 }
