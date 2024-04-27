@@ -100,8 +100,11 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Get vulnerability list that matches filters
 	view := views.ImageVulnerabilityView{
-		Name:   imageName,
-		Digest: imageDigest,
+		Name:               imageName,
+		Digest:             imageDigest,
+		OSFamily:           v.OSFamily,
+		OSVersion:          v.OSVersion,
+		OSEndOfServiceLife: v.OSEndOfServiceLife,
 	}
 	for id, vuln := range v.Vulnerabilities {
 		// filter by severity in query param

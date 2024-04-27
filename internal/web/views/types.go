@@ -14,10 +14,13 @@ type Image struct {
 
 // ImageData contains data about image vulnerabilities and metadata about the Pods running those images
 type ImageData struct {
-	Name                    string
-	Digest                  string
-	Pods                    map[PodMetadata]struct{}
-	Vulnerabilities         map[string]Vulnerability
+	Name                    string                   // name of the image
+	Digest                  string                   // sha digest of the image
+	OSFamily                string                   // distro name like "debian" or "alpine"
+	OSVersion               string                   // distro version like "12.6"
+	OSEndOfServiceLife      string                   // end of service life data
+	Pods                    map[PodMetadata]struct{} // data about Pods using this image
+	Vulnerabilities         map[string]Vulnerability // keys of CVE IDs with vulnerability data values
 	CriticalVulnerabilities int
 	HighVulnerabilities     int
 	MediumVulnerabilities   int
@@ -51,7 +54,11 @@ type ImageVulnerabilityView struct {
 	// Name is the name of the image containing vulnerabilities
 	Name string
 	// Digest is the string image hash
-	Digest string
+	Digest             string
+	OSFamily           string // distro name like "debian" or "alpine"
+	OSVersion          string // distro version like "12.6"
+	OSEndOfServiceLife string // end of service life data
+
 	// Data contains a slice of all the vulnerabilities for the given image
 	Data []ImageVulnerabilityData
 }
