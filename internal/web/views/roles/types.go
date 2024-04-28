@@ -1,6 +1,6 @@
 package roles
 
-// RolesView a list of data about role vulnerabilities
+// View a list of data about role vulnerabilities
 type View []Data
 
 // Data data about a role and its vulnerabilities
