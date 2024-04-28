@@ -26,7 +26,7 @@ func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters) (View, boo
 	for _, item := range data.Items {
 		// If this report is for the image in question, compile its data and return it
 		itemImageName := getImageNameFromLabels(item.Report.Registry.Server, item.Report.Artifact.Repository, item.Report.Artifact.Tag)
-		if filters.Name != itemImageName && filters.Digest != item.Report.Artifact.Digest {
+		if filters.Name != itemImageName || filters.Digest != item.Report.Artifact.Digest {
 			continue
 		}
 

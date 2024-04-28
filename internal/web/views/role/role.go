@@ -30,7 +30,7 @@ func GetView(data *v1alpha1.RbacAssessmentReportList, filters Filters) (View, bo
 			name = item.Name
 		}
 
-		if filters.Name != name && filters.Namespace != item.ObjectMeta.Labels["trivy-operator.resource.namespace"] {
+		if filters.Name != name || filters.Namespace != item.ObjectMeta.Labels["trivy-operator.resource.namespace"] {
 			continue
 		}
 
