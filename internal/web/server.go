@@ -7,26 +7,16 @@ import (
 	"strconv"
 	"strings"
 
-	scraper "github.com/starttoaster/prometheus-exporter-scraper"
 	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
 	"github.com/starttoaster/trivy-operator-explorer/internal/web/content"
 	imageview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/image"
 	imagesview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/images"
-	roleview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/role"
+	rolesview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/roles"
 )
-
-var scrpr *scraper.WebScraper
 
 // Start starts the webserver
 func Start(port string, metricsURL string) error {
-	// Create scraper
-	scrp, err := scraper.NewWebScraper(metricsURL)
-	if err != nil {
-		return fmt.Errorf("encountered error creating new file scraper: %w", err)
-	}
-	scrpr = scrp
-
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", imagesHandler)
 	mux.HandleFunc("/image", imageHandler)
@@ -138,12 +128,13 @@ func rolesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get scrape data from exporter
-	data, err := scrapeImageData(w)
+	// Get role reports
+	reports, err := kube.GetRbacAssessmentReportList()
 	if err != nil {
+		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		return
 	}
-	roles := roleview.GetRolesView(data)
+	roles := rolesview.GetRolesView(reports)
 
 	err = tmpl.Execute(w, roles)
 	if err != nil {

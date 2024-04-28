@@ -1,4 +1,4 @@
-package role
+package roles
 
 // RolesView a list of data about role vulnerabilities
 type RolesView []Data

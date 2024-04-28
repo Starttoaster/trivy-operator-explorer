@@ -6,7 +6,6 @@ require (
 	github.com/aquasecurity/trivy-operator v0.20.1
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
-	github.com/starttoaster/prometheus-exporter-scraper v0.0.1
 	k8s.io/client-go v0.30.0
 )
 
