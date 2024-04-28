@@ -23,7 +23,6 @@ type Filters struct {
 // GetImageView converts some report data to the /image view
 // returns view data and "true" if the image was found in the report list
 func GetImageView(data *v1alpha1.VulnerabilityReportList, filters Filters) (View, bool) {
-
 	for _, item := range data.Items {
 		// If this report is for the image in question, compile its data and return it
 		itemImageName := getImageNameFromLabels(item.Report.Registry.Server, item.Report.Artifact.Repository, item.Report.Artifact.Tag)

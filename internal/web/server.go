@@ -12,6 +12,7 @@ import (
 	"github.com/starttoaster/trivy-operator-explorer/internal/web/content"
 	imageview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/image"
 	imagesview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/images"
+	roleview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/role"
 	rolesview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/roles"
 )
 
@@ -21,6 +22,7 @@ func Start(port string, metricsURL string) error {
 	mux.HandleFunc("/", imagesHandler)
 	mux.HandleFunc("/image", imageHandler)
 	mux.HandleFunc("/roles", rolesHandler)
+	mux.HandleFunc("/role", roleHandler)
 	mux.Handle("/static/", http.FileServer(http.FS(content.Static)))
 	return http.ListenAndServe(fmt.Sprintf(":%s", port), mux)
 }
@@ -123,7 +125,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 func rolesHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl := template.Must(template.ParseFS(content.Static, "static/roles.html"))
 	if tmpl == nil {
-		log.Logger.Error("encountered error parsing images html template")
+		log.Logger.Error("encountered error parsing roles html template")
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
 		return
 	}
@@ -138,7 +140,58 @@ func rolesHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = tmpl.Execute(w, roles)
 	if err != nil {
-		log.Logger.Error("encountered error executing images html template", "error", err)
+		log.Logger.Error("encountered error executing roles html template", "error", err)
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+}
+
+func roleHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFS(content.Static, "static/role.html"))
+	if tmpl == nil {
+		log.Logger.Error("encountered error parsing role html template")
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+
+	// Parse URL query params
+	q := r.URL.Query()
+
+	// Check query params -- 404 if required params not passed
+	name := q.Get("name")
+	if name == "" {
+		log.Logger.Error("role name query param missing from request")
+		http.NotFound(w, r)
+		return
+	}
+	namespace := q.Get("namespace")
+	if namespace == "" {
+		log.Logger.Error("role namespace query param missing from request")
+		http.NotFound(w, r)
+		return
+	}
+
+	// Get role reports
+	reports, err := kube.GetRbacAssessmentReportList()
+	if err != nil {
+		log.Logger.Error("error getting RBACAssessmentReports", "error", err.Error())
+		return
+	}
+	role, found := roleview.GetView(reports, roleview.Filters{
+		Name:      name,
+		Namespace: namespace,
+	})
+
+	// If the selected role from query params was not found, 404
+	if !found {
+		log.Logger.Error("role name and namespace query params did not produce a valid result from reports", "name", name, "namespace", namespace)
+		http.NotFound(w, r)
+		return
+	}
+
+	err = tmpl.Execute(w, role)
+	if err != nil {
+		log.Logger.Error("encountered error executing role html template", "error", err)
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
 		return
 	}
