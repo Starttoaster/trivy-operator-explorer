@@ -41,7 +41,7 @@ func imagesHandler(w http.ResponseWriter, r *http.Request) {
 		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		return
 	}
-	imageData := imagesview.GetImagesView(data)
+	imageData := imagesview.GetView(data)
 
 	err = tmpl.Execute(w, imageData)
 	if err != nil {
@@ -97,7 +97,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get image view from reports
-	view, found := imageview.GetImageView(reports, imageview.Filters{
+	view, found := imageview.GetView(reports, imageview.Filters{
 		Name:         imageName,
 		Digest:       imageDigest,
 		Severity:     severity,
@@ -136,7 +136,7 @@ func rolesHandler(w http.ResponseWriter, r *http.Request) {
 		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		return
 	}
-	roles := rolesview.GetRolesView(reports)
+	roles := rolesview.GetView(reports)
 
 	err = tmpl.Execute(w, roles)
 	if err != nil {

@@ -8,8 +8,8 @@ import (
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
 )
 
-// GetImagesView converts some report data to the /images view
-func GetImagesView(data *v1alpha1.VulnerabilityReportList) View {
+// GetView converts some report data to the /images view
+func GetView(data *v1alpha1.VulnerabilityReportList) View {
 	var i View
 
 	for _, item := range data.Items {
@@ -71,12 +71,12 @@ func GetImagesView(data *v1alpha1.VulnerabilityReportList) View {
 		}
 	}
 
-	i = sortImagesView(i)
+	i = sortView(i)
 
 	return i
 }
 
-func sortImagesView(i View) View {
+func sortView(i View) View {
 	// Sort the slice by severity in descending order
 	sort.Slice(i, func(j, k int) bool {
 		if len(i[j].CriticalVulnerabilities) != len(i[k].CriticalVulnerabilities) {

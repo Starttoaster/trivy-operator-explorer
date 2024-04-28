@@ -7,9 +7,9 @@ import (
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
 )
 
-// GetRolesView converts some report data to the /roles view
-func GetRolesView(data *v1alpha1.RbacAssessmentReportList) RolesView {
-	var r RolesView
+// GetView converts some report data to the /roles view
+func GetView(data *v1alpha1.RbacAssessmentReportList) View {
+	var r View
 
 	for _, item := range data.Items {
 		var name string
@@ -54,12 +54,12 @@ func GetRolesView(data *v1alpha1.RbacAssessmentReportList) RolesView {
 		}
 	}
 
-	r = sortRolesView(r)
+	r = sortView(r)
 
 	return r
 }
 
-func (r RolesView) isUniqueRole(name, namespace, kind string) (int, bool) {
+func (r View) isUniqueRole(name, namespace, kind string) (int, bool) {
 	for i, role := range r {
 		if name == role.Name && namespace == role.Namespace && kind == role.Kind {
 			return i, false
@@ -69,7 +69,7 @@ func (r RolesView) isUniqueRole(name, namespace, kind string) (int, bool) {
 	return 0, true
 }
 
-func sortRolesView(r RolesView) RolesView {
+func sortView(r View) View {
 	// Sort the slice by severity in descending order
 	sort.Slice(r, func(j, k int) bool {
 		if len(r[j].CriticalVulnerabilities) != len(r[k].CriticalVulnerabilities) {

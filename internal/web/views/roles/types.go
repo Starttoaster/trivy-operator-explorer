@@ -1,7 +1,7 @@
 package roles
 
 // RolesView a list of data about role vulnerabilities
-type RolesView []Data
+type View []Data
 
 // Data data about a role and its vulnerabilities
 type Data struct {
