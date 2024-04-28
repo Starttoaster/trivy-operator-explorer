@@ -3,52 +3,116 @@ package views
 import (
 	"fmt"
 	"sort"
-	"strconv"
 	"strings"
 
-	scraper "github.com/starttoaster/prometheus-exporter-scraper"
-	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
-	"github.com/starttoaster/trivy-operator-explorer/internal/web/views"
+	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
 )
 
+/*
+	apiVersion: aquasecurity.github.io/v1alpha1
+	kind: VulnerabilityReport
+	metadata:
+	  labels:
+	    resource-spec-hash: 6cfb9465db
+	    trivy-operator.container.name: kube-router
+	    trivy-operator.resource.kind: DaemonSet
+	    trivy-operator.resource.name: kube-router
+	    trivy-operator.resource.namespace: kube-system
+	  name: daemonset-kube-router-kube-router
+	  namespace: kube-system
+	report:
+	  artifact:
+	    digest: sha256:e21abd397695e37937d411acf71a94cb36c18194d14c81775b43c896dc99639b
+	    repository: k0sproject/kube-router
+	    tag: v1.6.0-iptables1.8.9-1
+	  os:
+	    family: alpine
+	    name: 3.18.5
+	  registry:
+	    server: quay.io
+	  scanner:
+	    name: Trivy
+	    vendor: Aqua Security
+	    version: 0.50.1
+	  summary:
+	    criticalCount: 0
+	    highCount: 0
+	    lowCount: 2
+	    mediumCount: 13
+	    noneCount: 0
+	    unknownCount: 0
+	  updateTimestamp: '2024-04-28T02:15:57Z'
+	  vulnerabilities:
+	    - fixedVersion: 3.1.4-r3
+	      installedVersion: 3.1.4-r1
+	      lastModifiedDate: '2024-04-26T09:15:08Z'
+	      links: []
+	      primaryLink: https://avd.aquasec.com/nvd/cve-2023-6129
+	      publishedDate: '2024-01-09T17:15:12Z'
+	      resource: libcrypto3
+	      score: 6.5
+	      severity: MEDIUM
+	      target: ''
+	      title: >-
+	        mysql: openssl: POLY1305 MAC implementation corrupts vector registers on
+	        PowerPC
+	      vulnerabilityID: CVE-2023-6129
+	    - fixedVersion: 3.1.4-r4
+	      installedVersion: 3.1.4-r1
+	      lastModifiedDate: '2024-04-25T13:18:13Z'
+	      links: []
+	      primaryLink: https://avd.aquasec.com/nvd/cve-2023-6237
+	      publishedDate: '2024-04-25T07:15:45Z'
+	      resource: libcrypto3
+	      score: 5.9
+	      severity: MEDIUM
+	      target: ''
+	      title: 'openssl: Excessive time spent checking invalid RSA public keys'
+	      vulnerabilityID: CVE-2023-6237
+	    - fixedVersion: 3.1.4-r5
+	      installedVersion: 3.1.4-r1
+	      lastModifiedDate: '2024-02-08T10:15:13Z'
+	      links: []
+	      primaryLink: https://avd.aquasec.com/nvd/cve-2024-0727
+	      publishedDate: '2024-01-26T09:15:07Z'
+	      resource: libcrypto3
+	      score: 5.5
+	      severity: MEDIUM
+	      target: ''
+	      title: 'openssl: denial of service via null dereference'
+	      vulnerabilityID: CVE-2024-0727
+*/
+
 // GetImagesView converts some scrape data to the /images view
-func GetImagesView(data *scraper.ScrapeData) ImagesView {
+func GetImagesView(data *v1alpha1.VulnerabilityReportList) ImagesView {
 	var i ImagesView
 	i.Images = make(map[Image]ImageData)
 
-	for _, gauge := range data.Gauges {
-		if gauge.Key == views.TrivyImageVulnerabilityMetricName {
-			// TODO -- grab each label into variables individually and check that they're not empty
-			// Construct all data types from metric data
-			image := Image{
-				Name:   getImageNameFromLabels(gauge),
-				Digest: gauge.Labels["image_digest"],
-			}
-			podData := PodMetadata{
-				Pod:       gauge.Labels["resource_name"],
-				Namespace: gauge.Labels["namespace"],
-			}
+	for _, item := range data.Items {
+		image := Image{
+			Name:   getImageNameFromLabels(item.Report.Registry.Server, item.Report.Artifact.Repository, item.Report.Artifact.Tag),
+			Digest: item.Report.Artifact.Digest,
+		}
+		resourceData := ResourceMetadata{
+			Kind:      item.ObjectMeta.Labels["trivy-operator.resource.kind"],
+			Name:      item.ObjectMeta.Labels["trivy-operator.resource.name"],
+			Namespace: item.ObjectMeta.Labels["trivy-operator.resource.namespace"],
+		}
+
+		for _, v := range item.Report.Vulnerabilities {
 			score := float32(0.0)
-			if gauge.Labels["vuln_score"] != "" {
-				scoreVar, err := strconv.ParseFloat(gauge.Labels["vuln_score"], 32)
-				if err != nil {
-					log.Logger.Error("could not convert string to float32",
-						"error", err.Error(),
-						"score", gauge.Labels["vuln_score"],
-						"image", image.Name,
-					)
-					continue
-				}
-				score = float32(scoreVar)
+			if v.Score != nil {
+				score = float32(*v.Score)
 			}
-			cveID := gauge.Labels["vuln_id"]
+			cveID := v.VulnerabilityID
 			vuln := Vulnerability{
-				Severity:          gauge.Labels["severity"],
-				Score:             float32(score),
-				Resource:          gauge.Labels["resource"],
-				Title:             gauge.Labels["vuln_title"],
-				VulnerableVersion: gauge.Labels["installed_version"],
-				FixedVersion:      gauge.Labels["fixed_version"],
+				Severity:          string(v.Severity),
+				Score:             score,
+				URL:               v.PrimaryLink,
+				Resource:          v.Resource,
+				Title:             v.Title,
+				VulnerableVersion: v.InstalledVersion,
+				FixedVersion:      v.FixedVersion,
 			}
 
 			// Check if this image is already in the map
@@ -60,65 +124,38 @@ func GetImagesView(data *scraper.ScrapeData) ImagesView {
 					i.Images[image].Vulnerabilities[cveID] = vuln
 				}
 
-				// Add to the list of Pods using this image if it hasn't been yet
-				_, ok = i.Images[image].Pods[podData]
+				// Add to the list of Resources using this image if it hasn't been yet
+				_, ok = i.Images[image].Resources[resourceData]
 				if !ok {
-					i.Images[image].Pods[podData] = struct{}{}
+					i.Images[image].Resources[resourceData] = struct{}{}
 				}
 			} else {
-				podMap := make(map[PodMetadata]struct{})
+				resMap := make(map[ResourceMetadata]struct{})
 				vulnMap := make(map[string]Vulnerability)
 				imageData := ImageData{
-					Name:            image.Name,
-					Digest:          image.Digest,
-					Vulnerabilities: vulnMap,
-					Pods:            podMap,
+					Name:                    image.Name,
+					Digest:                  image.Digest,
+					Vulnerabilities:         vulnMap,
+					Resources:               resMap,
+					CriticalVulnerabilities: item.Report.Summary.CriticalCount,
+					HighVulnerabilities:     item.Report.Summary.HighCount,
+					MediumVulnerabilities:   item.Report.Summary.MediumCount,
+					LowVulnerabilities:      item.Report.Summary.LowCount,
+					OSFamily:                string(item.Report.OS.Family),
+					OSVersion:               item.Report.OS.Name,
+				}
+				if item.Report.OS.Eosl {
+					imageData.OSEndOfServiceLife = "true"
 				}
 				imageData.Vulnerabilities[cveID] = vuln
-				imageData.Pods[podData] = struct{}{}
+				imageData.Resources[resourceData] = struct{}{}
 				i.Images[image] = imageData
 			}
 		}
 	}
 
-	for _, gauge := range data.Gauges {
-		if gauge.Key == views.TrivyImageInfoMetricName {
-			image := Image{
-				Name:   getImageNameFromLabels(gauge),
-				Digest: gauge.Labels["image_digest"],
-			}
-
-			if data, ok := i.Images[image]; ok {
-				data.OSFamily = gauge.Labels["image_os_family"]
-				data.OSVersion = gauge.Labels["image_os_name"]
-				data.OSEndOfServiceLife = gauge.Labels["image_os_eosl"]
-				i.Images[image] = data
-			}
-		}
-	}
-
-	i = setImagesViewVulnerabilityCounters(i)
 	i = sortImagesView(i)
 
-	return i
-}
-
-func setImagesViewVulnerabilityCounters(i ImagesView) ImagesView {
-	for k, v := range i.Images {
-		for _, vuln := range v.Vulnerabilities {
-			switch vuln.Severity {
-			case "Critical":
-				v.CriticalVulnerabilities++
-			case "High":
-				v.HighVulnerabilities++
-			case "Medium":
-				v.MediumVulnerabilities++
-			case "Low":
-				v.LowVulnerabilities++
-			}
-			i.Images[k] = v
-		}
-	}
 	return i
 }
 
@@ -147,11 +184,11 @@ func sortImagesView(i ImagesView) ImagesView {
 	return i
 }
 
-func getImageNameFromLabels(gauge scraper.PrometheusGaugeMetric) string {
-	if gauge.Labels["image_registry"] == "index.docker.io" {
+func getImageNameFromLabels(registry, repo, tag string) string {
+	if registry == "index.docker.io" {
 		// If Docker Hub, trim the registry prefix for readability
 		// Also trims `library/` from the prefix of the image name, which is a hidden username for Docker Hub official images
-		return fmt.Sprintf("%s:%s", strings.TrimPrefix(gauge.Labels["image_repository"], "library/"), gauge.Labels["image_tag"])
+		return fmt.Sprintf("%s:%s", strings.TrimPrefix(repo, "library/"), tag)
 	}
-	return fmt.Sprintf("%s/%s:%s", gauge.Labels["image_registry"], gauge.Labels["image_repository"], gauge.Labels["image_tag"])
+	return fmt.Sprintf("%s/%s:%s", registry, repo, tag)
 }

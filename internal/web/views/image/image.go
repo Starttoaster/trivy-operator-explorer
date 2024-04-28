@@ -1,6 +1,10 @@
 package views
 
-import "sort"
+import (
+	"sort"
+
+	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
+)
 
 // SortImageVulnerabilityView sorts the provided ImageVulnerabilityView's data slice
 func SortImageVulnerabilityView(v ImageVulnerabilityView) ImageVulnerabilityView {
@@ -14,13 +18,13 @@ func SortImageVulnerabilityView(v ImageVulnerabilityView) ImageVulnerabilityView
 	)
 	for _, data := range v.Data {
 		switch data.Severity {
-		case "Critical":
+		case string(v1alpha1.SeverityCritical):
 			crit = append(crit, data)
-		case "High":
+		case string(v1alpha1.SeverityHigh):
 			high = append(high, data)
-		case "Medium":
+		case string(v1alpha1.SeverityMedium):
 			med = append(med, data)
-		case "Low":
+		case string(v1alpha1.SeverityLow):
 			low = append(low, data)
 		}
 	}

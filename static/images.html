@@ -68,16 +68,16 @@
                         <td class="px-6 py-4">
                             <div class="dropdown shadow-md relative rounded-lg">
                                 <button id="podDropdownButton" data-dropdown-toggle="dropdown" class="dark:text-white bg-blue-800 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-800 dark:hover:bg-blue-700 dark:focus:ring-blue-800" type="button">
-                                    {{ len $data.Pods }}
+                                    {{ len $data.Resources }}
                                     <svg class="w-2.5 h-2.5 ms-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
                                         <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/>
                                     </svg>
                                 </button>
                                 <div class="dropdown-content shadow-md relative rounded-lg">
                                     <ul class="px-1 py-1 rounded-lg text-lg font-medium text-white dark:text-white dark:bg-indigo-800 dark:border-gray-700" aria-labelledby="dropdownDefaultButton">
-                                        {{ range $podData, $nada := $data.Pods }}
+                                        {{ range $resData, $nada := $data.Resources }}
                                         <li>
-                                          <a href="#" class="block dark:hover:bg-indigo-900">{{ $podData.Namespace }}/{{ $podData.Pod }}</a>
+                                          <a href="#" class="block dark:hover:bg-indigo-900">{{ $resData.Kind }}/{{ $resData.Namespace }}/{{ $resData.Name }}</a>
                                         </li>
                                         {{ end }}
                                     </ul>

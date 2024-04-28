@@ -80,9 +80,10 @@ There are query parameters for image and digest as well, but it's not expected f
 
 ## TODO
 
-- Graphical elements for setting filters, currently they're just URL query parameters.
 - Add Role/ClusterRole vulnerabilities to the dashboard.
 - Add exposed secrets scan results to dashboard.
-- Support different vulnerability IDs - currently GHSA vulnerabilities link to NIST just like normal CVEs, where NIST 404s.
-- Add ability to connect to cluster to check for images or roles not scanned yet.
+- Add SBOM reports to dashboard.
+- Add config audit reports to dashboard (reports on potentially insecure resource declarations.)
+- Add cluster compliance reports.
+- Graphical elements for setting filters, currently they're just URL query parameters.
 - Testing. Pretty sure by law no new product can have tests.

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	scraper "github.com/starttoaster/prometheus-exporter-scraper"
+	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
 	"github.com/starttoaster/trivy-operator-explorer/internal/web/content"
 	imageview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/image"
@@ -40,9 +41,10 @@ func imagesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get scrape data from exporter
-	data, err := scrapeImageData(w)
+	// Get vulnerability reports
+	data, err := kube.GetVulnerabilityReportList()
 	if err != nil {
+		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		return
 	}
 	imageData := imageview.GetImagesView(data)
@@ -84,9 +86,10 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 	resources := q.Get("resources")
 	notResources := q.Get("notresources")
 
-	// Get scrape data from exporter
-	data, err := scrapeImageData(w)
+	// Get vulnerability reports
+	data, err := kube.GetVulnerabilityReportList()
 	if err != nil {
+		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		return
 	}
 	imageData := imageview.GetImagesView(data)

@@ -14,22 +14,23 @@ type Image struct {
 
 // ImageData contains data about image vulnerabilities and metadata about the Pods running those images
 type ImageData struct {
-	Name                    string                   // name of the image
-	Digest                  string                   // sha digest of the image
-	OSFamily                string                   // distro name like "debian" or "alpine"
-	OSVersion               string                   // distro version like "12.6"
-	OSEndOfServiceLife      string                   // end of service life data
-	Pods                    map[PodMetadata]struct{} // data about Pods using this image
-	Vulnerabilities         map[string]Vulnerability // keys of CVE IDs with vulnerability data values
+	Name                    string                        // name of the image
+	Digest                  string                        // sha digest of the image
+	OSFamily                string                        // distro name like "debian" or "alpine"
+	OSVersion               string                        // distro version like "12.6"
+	OSEndOfServiceLife      string                        // end of service life data
+	Resources               map[ResourceMetadata]struct{} // data about resources using this image
+	Vulnerabilities         map[string]Vulnerability      // keys of CVE IDs with vulnerability data values
 	CriticalVulnerabilities int
 	HighVulnerabilities     int
 	MediumVulnerabilities   int
 	LowVulnerabilities      int
 }
 
-// PodMetadata data related to a k8s Pod
-type PodMetadata struct {
-	Pod       string
+// ResourceMetadata data related to a k8s resource using a vulnerable image
+type ResourceMetadata struct {
+	Kind      string
+	Name      string
 	Namespace string
 }
 
@@ -39,6 +40,8 @@ type Vulnerability struct {
 	Severity string
 	// CVE score from 0-10 with with one decimal place
 	Score float32
+	// URL is the URL to the proper CVE database
+	URL string
 	// CVE vulnerable resource (eg. curl, libcurl)
 	Resource string
 	// CVE title (eg. libcarlsjr: remote code execution)
