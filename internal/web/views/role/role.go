@@ -12,6 +12,9 @@ import (
 type Filters struct {
 	Name      string
 	Namespace string
+
+	// optional
+	Severity string
 }
 
 // GetView converts some report data to the /role view
@@ -48,6 +51,11 @@ func GetView(data *v1alpha1.RbacAssessmentReportList, filters Filters) (View, bo
 				Title:       v.Title,
 				Description: v.Description,
 			}
+
+			if filters.Severity != "" && !strings.EqualFold(vuln.Severity, filters.Severity) {
+				continue
+			}
+
 			role.Vulnerabilities = append(role.Vulnerabilities, vuln)
 		}
 

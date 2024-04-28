@@ -170,6 +170,7 @@ func roleHandler(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	severity := q.Get("severity")
 
 	// Get role reports
 	reports, err := kube.GetRbacAssessmentReportList()
@@ -180,6 +181,7 @@ func roleHandler(w http.ResponseWriter, r *http.Request) {
 	role, found := roleview.GetView(reports, roleview.Filters{
 		Name:      name,
 		Namespace: namespace,
+		Severity:  severity,
 	})
 
 	// If the selected role from query params was not found, 404
