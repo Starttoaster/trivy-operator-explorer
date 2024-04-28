@@ -44,13 +44,13 @@
                 <thead class="rounded-lg text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                     <tr>
                         <th scope="col" class="px-6 py-3">
-                            Kind
+                            Namespace
                         </th>
                         <th scope="col" class="px-6 py-3">
                             Name
                         </th>
                         <th scope="col" class="px-6 py-3">
-                            Namespace
+                            Kind
                         </th>
                         <th scope="col" class="px-6 py-3">
                             Vulnerabilities
@@ -61,9 +61,11 @@
                 <tbody>
                     {{ range $data := . }}
                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                        <!-- Image column -->
+                        <!-- Roles column -->
                         <td scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                            {{ $data.Kind }}
+                            <a href="/role?name={{ $data.Name }}&namespace={{ $data.Namespace }}&severity=Critical">
+                                {{ $data.Namespace }}
+                            </a>
                         </td>
                         <td scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                             <a href="/role?name={{ $data.Name }}&namespace={{ $data.Namespace }}&severity=Critical">
@@ -71,9 +73,7 @@
                             </a>
                         </td>
                         <td scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                            <a href="/role?name={{ $data.Name }}&namespace={{ $data.Namespace }}&severity=Critical">
-                                {{ $data.Namespace }}
-                            </a>
+                            {{ $data.Kind }}
                         </td>
                         <!-- Vulnerabilities column -->
                         <td class="px-6 py-4">
