@@ -8,8 +8,8 @@ import (
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
 )
 
-// ImageFilters contains the supported filters for the image view
-type ImageFilters struct {
+// Filters contains the supported filters for the image view
+type Filters struct {
 	Name   string
 	Digest string
 
@@ -22,7 +22,7 @@ type ImageFilters struct {
 
 // GetImageView converts some report data to the /image view
 // returns view data and "true" if the image was found in the report list
-func GetImageView(data *v1alpha1.VulnerabilityReportList, filters ImageFilters) (View, bool) {
+func GetImageView(data *v1alpha1.VulnerabilityReportList, filters Filters) (View, bool) {
 
 	for _, item := range data.Items {
 		// If this report is for the image in question, compile its data and return it

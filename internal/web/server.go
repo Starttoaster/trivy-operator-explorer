@@ -105,7 +105,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get image view from reports
-	view, found := imageview.GetImageView(reports, imageview.ImageFilters{
+	view, found := imageview.GetImageView(reports, imageview.Filters{
 		Name:         imageName,
 		Digest:       imageDigest,
 		Severity:     severity,
