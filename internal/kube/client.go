@@ -29,7 +29,10 @@ func InitClient(inCluster bool, kubeconfigPath string) error {
 		}
 	}
 
-	v1alpha1.AddToScheme(scheme.Scheme)
+	err = v1alpha1.AddToScheme(scheme.Scheme)
+	if err != nil {
+		return fmt.Errorf("error adding to scheme: %w", err)
+	}
 
 	crdConfig := *config
 	crdConfig.ContentConfig.GroupVersion = &v1alpha1.SchemeGroupVersion
