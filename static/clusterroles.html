@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-  <title>Explorer: Roles</title>
+  <title>Explorer: ClusterRoles</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="/static/css/output.css" rel="stylesheet">
@@ -19,9 +19,6 @@
                 <thead class="rounded-lg text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                     <tr>
                         <th scope="col" class="px-6 py-3">
-                            Namespace
-                        </th>
-                        <th scope="col" class="px-6 py-3">
                             Name
                         </th>
                         <th scope="col" class="px-6 py-3">
@@ -38,12 +35,7 @@
                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
                         <!-- Roles column -->
                         <td scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                            <a href="/role?name={{ $data.Name }}&namespace={{ $data.Namespace }}">
-                                {{ $data.Namespace }}
-                            </a>
-                        </td>
-                        <td scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                            <a href="/role?name={{ $data.Name }}&namespace={{ $data.Namespace }}">
+                            <a href="/clusterrole?name={{ $data.Name }}">
                                 {{ $data.Name }}
                             </a>
                         </td>
@@ -53,22 +45,22 @@
                         <!-- Checks column -->
                         <td class="px-6 py-4">
                             {{ if $data.CriticalVulnerabilities }}
-                            <a href="/role?name={{ $data.Name }}&namespace={{ $data.Namespace }}&severity=Critical" title="Critical" class="bg-red-100 text-red-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-red-900 dark:text-red-100">
+                            <a href="/clusterrole?name={{ $data.Name }}&severity=Critical" title="Critical" class="bg-red-100 text-red-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-red-900 dark:text-red-100">
                                 {{ len $data.CriticalVulnerabilities }}
                             </a>
                             {{ end }}
                             {{ if $data.HighVulnerabilities }}
-                            <a href="/role?name={{ $data.Name }}&namespace={{ $data.Namespace }}&severity=High" title="High" class="bg-orange-100 text-orange-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-orange-900 dark:text-orange-100">
+                            <a href="/clusterrole?name={{ $data.Name }}&severity=High" title="High" class="bg-orange-100 text-orange-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-orange-900 dark:text-orange-100">
                                 {{ len $data.HighVulnerabilities }}
                             </a>
                             {{ end }}
                             {{ if $data.MediumVulnerabilities }}
-                            <a href="/role?name={{ $data.Name }}&namespace={{ $data.Namespace }}&severity=Medium" title="Medium" class="bg-yellow-100 text-yellow-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-yellow-900 dark:text-yellow-100">
+                            <a href="/role?name={{ $data.Name }}&severity=Medium" title="Medium" class="bg-yellow-100 text-yellow-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-yellow-900 dark:text-yellow-100">
                                 {{ len $data.MediumVulnerabilities }}
                             </a>
                             {{ end }}
                             {{ if $data.LowVulnerabilities }}
-                            <a href="/role?name={{ $data.Name }}&namespace={{ $data.Namespace }}&severity=Low" title="Low" class="bg-blue-100 text-blue-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-blue-900 dark:text-blue-100">
+                            <a href="/role?name={{ $data.Name }}&severity=Low" title="Low" class="bg-blue-100 text-blue-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-blue-900 dark:text-blue-100">
                                 {{ len $data.LowVulnerabilities }}
                             </a>
                             {{ end }}
