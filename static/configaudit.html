@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <title>{{ .Name }}</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="/static/css/output.css" rel="stylesheet">
+</head>
+<body class="min-h-screen bg-indigo-900">
+     
+    <!-- Sidebar -->
+    {{template "sidebar.html"}}
+
+    <!-- Role name top bar -->
+    <nav class="sm:ml-64 bg-white border-gray-200 dark:bg-gray-900">
+        <div class="max-w-screen-xl flex flex-wrap justify-between p-4">
+          <div class="hidden w-full md:block md:w-auto" id="navbar-default">
+            <ul class="font-medium flex flex-col p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 rtl:space-x-reverse md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
+              <li>
+                <span class="block py-2 px-3 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 dark:text-white md:dark:text-blue-200" aria-current="page">{{ .Name }}</span>
+              </li>
+              <li>
+                <span class="block py-2 px-3 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-400 md:p-0 dark:text-white md:dark:text-blue-500" aria-current="page">{{ .Namespace }}</span>
+              </li>
+              <li>
+                <span class="block py-2 px-3 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-400 md:p-0 dark:text-white md:dark:text-blue-700" aria-current="page">{{ .Kind }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+    </nav>
+
+    <!-- Table content -->
+    <div class="p-4 sm:ml-64 bg-indigo-900">
+        <div class="relative overflow-x-auto shadow-md rounded-lg">
+            <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                <thead class="rounded-lg text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <th scope="col" class="px-6 py-3">
+                            Check
+                        </th>
+                        <th scope="col" class="px-6 py-3">
+                            Severity
+                        </th>
+                        <th scope="col" class="px-6 py-3">
+                            Title
+                        </th>
+                        <th scope="col" class="px-6 py-3">
+                            Description
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ range $data := .Vulnerabilities }}
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            <a href="{{ $data.URL }}" >
+                                <span class="ms-3">{{ $data.ID }}</span>
+                            </a>
+                        </th>
+                        <td class="px-6 py-4">
+                            {{if eq $data.Severity "CRITICAL"}}
+                            <span class="bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-100">{{ $data.Severity }}</span>
+                            {{else if eq $data.Severity "HIGH"}}
+                            <span class="bg-orange-100 text-orange-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-orange-900 dark:text-orange-100">{{ $data.Severity }}</span>
+                            {{else if eq $data.Severity "MEDIUM"}}
+                            <span class="bg-yellow-100 text-yellow-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-yellow-900 dark:text-yellow-100">{{ $data.Severity }}</span>
+                            {{else if eq $data.Severity "LOW"}}
+                            <span class="bg-blue-100 text-blue-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-blue-900 dark:text-blue-100">{{ $data.Severity }}</span>
+                            {{end}}
+                        </td>
+                        <td class="px-6 py-4">
+                            {{ $data.Title }}
+                        </td>
+                        <td class="px-6 py-4">
+                            {{ $data.Description }}
+                        </td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

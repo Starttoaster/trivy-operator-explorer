@@ -1174,5 +1174,10 @@ video {
       --tw-text-opacity: 1;
       color: rgb(59 130 246 / var(--tw-text-opacity));
     }
+
+    .md\:dark\:text-blue-700 {
+      --tw-text-opacity: 1;
+      color: rgb(29 78 216 / var(--tw-text-opacity));
+    }
   }
 }
