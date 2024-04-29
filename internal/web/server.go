@@ -17,7 +17,7 @@ import (
 )
 
 // Start starts the webserver
-func Start(port string, metricsURL string) error {
+func Start(port string) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", imagesHandler)
 	mux.HandleFunc("/image", imageHandler)

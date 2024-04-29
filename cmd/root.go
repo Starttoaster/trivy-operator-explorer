@@ -44,11 +44,7 @@ var rootCmd = &cobra.Command{
 			log.Logger.Error("server port flag not set. Should be 8080 by default. This likely means it was overridden by user input with no value.")
 			os.Exit(1)
 		}
-		if viper.GetString("metrics-endpoint") == "" {
-			log.Logger.Error("metrics endpoint flag not set. Set with the --metrics-endpoint flag or TRIVY_OPERATOR_EXPLORER_METRICS_ENDPOINT environment variable.")
-			os.Exit(1)
-		}
-		cobra.CheckErr(web.Start(viper.GetString("server-port"), viper.GetString("metrics-endpoint")))
+		cobra.CheckErr(web.Start(viper.GetString("server-port")))
 	},
 }
 
@@ -65,17 +61,10 @@ func init() {
 	viper.AutomaticEnv()
 
 	rootCmd.PersistentFlags().String("log-level", "info", "The log-level for the application, can be one of info, warn, error, debug.")
-	rootCmd.PersistentFlags().String("metrics-endpoint", "", "The URL to your Trivy Operator metrics endpoint (eg. http://trivy-operator.trivy-system.svc.cluster.local/metrics)")
 	rootCmd.PersistentFlags().Uint16("server-port", 8080, "The port the metrics server binds to.")
 	rootCmd.PersistentFlags().String("kubeconfig", "", "The path to a kubeconfig. Assumes in-cluster configuration if left blank.")
 
 	err := viper.BindPFlag("log-level", rootCmd.PersistentFlags().Lookup("log-level"))
-	if err != nil {
-		log.Logger.Error(err.Error())
-		os.Exit(1)
-	}
-
-	err = viper.BindPFlag("metrics-endpoint", rootCmd.PersistentFlags().Lookup("metrics-endpoint"))
 	if err != nil {
 		log.Logger.Error(err.Error())
 		os.Exit(1)
