@@ -14,13 +14,13 @@ rules:
     resources:
       - vulnerabilityreports
       - rbacassessmentreports
+      - clusterrbacassessmentreports
       #- sbomreports
       #- infraassessmentreports
       #- exposedsecretreports
       #- configauditreports
       #- clustervulnerabilityreports
       #- clustersbomreports
-      #- clusterrbacassessmentreports
       #- clusterinfraassessmentreports
       #- clusterconfigauditreports
       #- clustercompliancereports
