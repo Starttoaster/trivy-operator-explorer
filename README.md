@@ -41,7 +41,7 @@ Example URL: `http://your.explorer.install/image?hasfix=true&severity=Critical`
 
 There are query parameters for image and digest as well, but it's not expected for them to be changed manually. These filters currently do not have a graphical toggle but there's a TODO item below to add some form elements to the page for them.
 
-### ClusterRole/Role filter
+### ClusterRole/Role/ConfigAudit filter
 
 | Parameters   | Description                                                           | Example                   |
 |--------------|-----------------------------------------------------------------------|---------------------------|
@@ -53,7 +53,6 @@ Example URL: `http://your.explorer.install/role?severity=Critical`
 
 - Add exposed secrets scan results to dashboard.
 - Add SBOM reports to dashboard.
-- Add config audit reports to dashboard (reports on potentially insecure resource declarations.)
 - Add cluster compliance reports.
 - Make a home page that displays useful graphs for each of the report types.
 - Graphical elements for setting filters, currently they're just URL query parameters.
