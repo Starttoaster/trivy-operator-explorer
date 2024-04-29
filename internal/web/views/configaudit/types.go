@@ -18,4 +18,5 @@ type Vulnerability struct {
 	Severity    string
 	Title       string
 	Description string
+	Message     string
 }

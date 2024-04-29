@@ -57,6 +57,7 @@ func GetView(data *v1alpha1.ConfigAuditReportList, filters Filters) (View, bool)
 				Severity:    string(v.Severity),
 				Title:       v.Title,
 				Description: v.Description,
+				Message:     strings.Join(v.Messages, "..."),
 			}
 
 			if filters.Severity != "" && !strings.EqualFold(vuln.Severity, filters.Severity) {
