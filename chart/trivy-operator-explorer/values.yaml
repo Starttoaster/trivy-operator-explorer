@@ -15,9 +15,6 @@ nameOverride: ""
 fullnameOverride: ""
 
 config:
-  # REQUIRED: Set to your metrics endpoint. eg. 'http://trivy-operator.trivy-system.svc.cluster.local/metrics'
-  metrics_endpoint: ''
-
   # Set to 'debug' for more logs
   log_level: 'info'
 

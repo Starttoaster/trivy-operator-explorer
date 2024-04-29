@@ -2,10 +2,6 @@
 
 This is a web explorer that scrapes the data exported by the [Trivy Operator for Kubernetes.](https://github.com/aquasecurity/trivy-operator) This image runs as a single binary in a distroless container image, which means it's an extremely small footprint on your cluster too.
 
-The Trivy Operator exports a LOT of metrics about vulnerabilities in a kubernetes cluster; so many that some may consider not storing all of that in Prometheus at all. Because of this, instead of querying Prometheus, this explorer scrapes the operator's metrics exporter itself and parses it for dashboarding. 
-
-Note that this only reports image vulnerabilities for the time being. The Trivy Operator exports many other metrics, including reporting on potentially insecure Roles or ClusterRoles, which will be added to this explorer over time.
-
 ## Preview
 
 ![Cluster dashboard](content/index.png)
@@ -20,37 +16,9 @@ This is what you see when you click on an image. All the vulnerabilities are ord
 
 ### Pre-requisites
 
-This should go without saying but you'll need the [Trivy Operator](https://github.com/aquasecurity/trivy-operator) installed. Follow the documentation for installing it how you please, but I install it with helm, which lets me set a values file with the following settings:
-
-```yaml
-operator:
-  # Enable all the metrics exporters
-  # be aware that metrics cardinality is significantly increased with these features enabled
-  # but these are what power the dashboard.
-  metricsVulnIdEnabled: true
-  metricsExposedSecretInfo: true
-  metricsConfigAuditInfo: true
-  metricsRbacAssessmentInfo: true
-  metricsInfraAssessmentInfo: true
-  metricsImageInfo: true
-  metricsClusterComplianceInfo: true
-
-# By default, trivy operator installs a headless Service with no Cluster IP.
-# This gives it a cluster IP, allowing us to use it as the endpoint we point to in the explorer's values.
-service:
-  headless: false
-```
+You will of course need [Trivy Operator](https://github.com/aquasecurity/trivy-operator) already installed. The latest version of this explorer should work with the latest version of Trivy Operator.
 
 ### Install explorer
-
-This assumes you installed the Trivy Operator in the `trivy-system` namespace. So edit the operator's endpoint if you installed to a different namespace.
-
-Make a values file with at least the following:
-
-```yaml
-config:
-  metrics_endpoint: 'http://trivy-operator.trivy-system.svc.cluster.local/metrics'
-```
 
 And install the helm chart with your values file:
 
@@ -58,7 +26,6 @@ And install the helm chart with your values file:
 helm upgrade --install --create-namespace \
 --repo "https://starttoaster.github.io/trivy-operator-explorer" 
 -n trivy-system \
---values ./values.yaml \
 trivy-operator-explorer \
 trivy-operator-explorer
 ```
@@ -80,9 +47,10 @@ There are query parameters for image and digest as well, but it's not expected f
 
 ## TODO
 
-- Graphical elements for setting filters, currently they're just URL query parameters.
 - Add Role/ClusterRole vulnerabilities to the dashboard.
 - Add exposed secrets scan results to dashboard.
-- Support different vulnerability IDs - currently GHSA vulnerabilities link to NIST just like normal CVEs, where NIST 404s.
-- Add ability to connect to cluster to check for images or roles not scanned yet.
+- Add SBOM reports to dashboard.
+- Add config audit reports to dashboard (reports on potentially insecure resource declarations.)
+- Add cluster compliance reports.
+- Graphical elements for setting filters, currently they're just URL query parameters.
 - Testing. Pretty sure by law no new product can have tests.
