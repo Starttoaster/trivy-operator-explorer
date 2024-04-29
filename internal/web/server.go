@@ -12,6 +12,8 @@ import (
 	"github.com/starttoaster/trivy-operator-explorer/internal/web/content"
 	clusterroleview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusterrole"
 	clusterrolesview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusterroles"
+	configauditview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/configaudit"
+	configauditsview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/configaudits"
 	imageview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/image"
 	imagesview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/images"
 	roleview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/role"
@@ -27,6 +29,8 @@ func Start(port string) error {
 	mux.HandleFunc("/role", roleHandler)
 	mux.HandleFunc("/clusterroles", clusterrolesHandler)
 	mux.HandleFunc("/clusterrole", clusterroleHandler)
+	mux.HandleFunc("/configaudits", configauditsHandler)
+	mux.HandleFunc("/configaudit", configauditHandler)
 	mux.Handle("/static/", http.FileServer(http.FS(content.Static)))
 	return http.ListenAndServe(fmt.Sprintf(":%s", port), mux)
 }
@@ -268,6 +272,90 @@ func clusterroleHandler(w http.ResponseWriter, r *http.Request) {
 	err = tmpl.Execute(w, role)
 	if err != nil {
 		log.Logger.Error("encountered error executing clusterrole html template", "error", err)
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+}
+
+func configauditsHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFS(content.Static, "static/configaudits.html", "static/sidebar.html"))
+	if tmpl == nil {
+		log.Logger.Error("encountered error parsing configaudits html template")
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+
+	// Get reports
+	reports, err := kube.GetConfigAuditReportList()
+	if err != nil {
+		log.Logger.Error("error getting configauditreports", "error", err.Error())
+		return
+	}
+	audits := configauditsview.GetView(reports)
+
+	err = tmpl.Execute(w, audits)
+	if err != nil {
+		log.Logger.Error("encountered error executing configaudits html template", "error", err)
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+}
+
+func configauditHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFS(content.Static, "static/configaudit.html", "static/sidebar.html"))
+	if tmpl == nil {
+		log.Logger.Error("encountered error parsing configaudit html template")
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+
+	// Parse URL query params
+	q := r.URL.Query()
+
+	// Check query params -- 404 if required params not passed
+	name := q.Get("name")
+	if name == "" {
+		log.Logger.Error("config audit name query param missing from request")
+		http.NotFound(w, r)
+		return
+	}
+	namespace := q.Get("namespace")
+	if namespace == "" {
+		log.Logger.Error("config audit namespace query param missing from request")
+		http.NotFound(w, r)
+		return
+	}
+	kind := q.Get("kind")
+	if kind == "" {
+		log.Logger.Error("config audit kind query param missing from request")
+		http.NotFound(w, r)
+		return
+	}
+	severity := q.Get("severity")
+
+	// Get configaudit reports
+	reports, err := kube.GetConfigAuditReportList()
+	if err != nil {
+		log.Logger.Error("error getting configauditreports", "error", err.Error())
+		return
+	}
+	audit, found := configauditview.GetView(reports, configauditview.Filters{
+		Name:      name,
+		Namespace: namespace,
+		Kind:      kind,
+		Severity:  severity,
+	})
+
+	// If the selected resource from query params was not found, 404
+	if !found {
+		log.Logger.Error("resource name and namespace query params did not produce a valid result from reports", "name", name, "namespace", namespace)
+		http.NotFound(w, r)
+		return
+	}
+
+	err = tmpl.Execute(w, audit)
+	if err != nil {
+		log.Logger.Error("encountered error executing configaudit html template", "error", err)
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
 		return
 	}
