@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-  <title>{{ .Name }}</title>
+  <title>Explorer: Roles</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="/static/css/output.css" rel="stylesheet">
+  <link href="/static/css/extra.css" rel="stylesheet">
 </head>
 <body class="min-h-screen bg-indigo-900">
      
@@ -27,7 +28,7 @@
                     <a href="/roles" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
                         <svg class="flex-shrink-0 w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 18">
                             <path d="M14 2a3.963 3.963 0 0 0-1.4.267 6.439 6.439 0 0 1-1.331 6.638A4 4 0 1 0 14 2Zm1 9h-1.264A6.957 6.957 0 0 1 15 15v2a2.97 2.97 0 0 1-.184 1H19a1 1 0 0 0 1-1v-1a5.006 5.006 0 0 0-5-5ZM6.5 9a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9ZM8 10H5a5.006 5.006 0 0 0-5 5v2a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-2a5.006 5.006 0 0 0-5-5Z"/>
-                        </svg>
+                         </svg>
                        <span class="ms-3">Roles</span>
                     </a>
                 </li>
@@ -43,94 +44,59 @@
         </div>
     </aside>
 
-    <!-- Image name top bar -->
-    <nav class="sm:ml-64 bg-white border-gray-200 dark:bg-gray-900">
-        <div class="max-w-screen-xl flex flex-wrap justify-between p-4">
-          <div class="hidden w-full md:block md:w-auto" id="navbar-default">
-            <ul class="font-medium flex flex-col p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 rtl:space-x-reverse md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
-              <li>
-                <span class="block py-2 px-3 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 dark:text-white md:dark:text-blue-200" aria-current="page">{{ .Name }}</span>
-              </li>
-              <li>
-                <span class="block py-2 px-3 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-400 md:p-0 dark:text-white md:dark:text-blue-500" aria-current="page">{{ .Digest }}</span>
-              </li>
-              {{ if .OSFamily }}
-              <li>
-                <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">{{ .OSFamily }} {{ .OSVersion }}</span>
-              </li>
-              {{ end }}
-              {{ if .OSEndOfServiceLife }}
-              <li>
-                <span class="bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-red-900 dark:text-red-300">EoSL</span>
-              </li>
-              {{ end }}
-            </ul>
-          </div>
-        </div>
-    </nav>
-
     <!-- Table content -->
     <div class="p-4 sm:ml-64 bg-indigo-900">
         <div class="relative overflow-x-auto shadow-md rounded-lg">
             <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                <!-- Table headers -->
                 <thead class="rounded-lg text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                     <tr>
                         <th scope="col" class="px-6 py-3">
-                            CVE
+                            Name
                         </th>
                         <th scope="col" class="px-6 py-3">
-                            Severity
+                            Kind
                         </th>
                         <th scope="col" class="px-6 py-3">
-                            Score
-                        </th>
-                        <th scope="col" class="px-6 py-3">
-                            Resource
-                        </th>
-                        <th scope="col" class="px-6 py-3">
-                            Title
-                        </th>
-                        <th scope="col" class="px-6 py-3">
-                            Installed
-                        </th>
-                        <th scope="col" class="px-6 py-3">
-                            Fixed In
+                            Checks
                         </th>
                     </tr>
                 </thead>
+                <!-- Table body -->
                 <tbody>
-                    {{ range $data := .Vulnerabilities }}
+                    {{ range $data := . }}
                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                            <a href="{{ $data.URL }}" >
-                                <span class="ms-3">{{ $data.ID }}</span>
+                        <!-- Roles column -->
+                        <td scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            <a href="/clusterrole?name={{ $data.Name }}">
+                                {{ $data.Name }}
                             </a>
-                        </th>
-                        <td class="px-6 py-4">
-                            {{if eq $data.Severity "CRITICAL"}}
-                            <span class="bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-100">{{ $data.Severity }}</span>
-                            {{else if eq $data.Severity "HIGH"}}
-                            <span class="bg-orange-100 text-orange-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-orange-900 dark:text-orange-100">{{ $data.Severity }}</span>
-                            {{else if eq $data.Severity "MEDIUM"}}
-                            <span class="bg-yellow-100 text-yellow-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-yellow-900 dark:text-yellow-100">{{ $data.Severity }}</span>
-                            {{else if eq $data.Severity "LOW"}}
-                            <span class="bg-blue-100 text-blue-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-blue-900 dark:text-blue-100">{{ $data.Severity }}</span>
-                            {{end}}
                         </td>
-                        <td class="px-6 py-4">
-                            {{ $data.Score }}
+                        <td scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            {{ $data.Kind }}
                         </td>
+                        <!-- Checks column -->
                         <td class="px-6 py-4">
-                            {{ $data.Resource }}
-                        </td>
-                        <td class="px-6 py-4">
-                            {{ $data.Title }}
-                        </td>
-                        <td class="px-6 py-4">
-                            {{ $data.VulnerableVersion }}
-                        </td>
-                        <td class="px-6 py-4">
-                            {{ $data.FixedVersion }}
+                            {{ if $data.CriticalVulnerabilities }}
+                            <a href="/clusterrole?name={{ $data.Name }}&severity=Critical" title="Critical" class="bg-red-100 text-red-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-red-900 dark:text-red-100">
+                                {{ len $data.CriticalVulnerabilities }}
+                            </a>
+                            {{ end }}
+                            {{ if $data.HighVulnerabilities }}
+                            <a href="/clusterrole?name={{ $data.Name }}&severity=High" title="High" class="bg-orange-100 text-orange-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-orange-900 dark:text-orange-100">
+                                {{ len $data.HighVulnerabilities }}
+                            </a>
+                            {{ end }}
+                            {{ if $data.MediumVulnerabilities }}
+                            <a href="/role?name={{ $data.Name }}&severity=Medium" title="Medium" class="bg-yellow-100 text-yellow-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-yellow-900 dark:text-yellow-100">
+                                {{ len $data.MediumVulnerabilities }}
+                            </a>
+                            {{ end }}
+                            {{ if $data.LowVulnerabilities }}
+                            <a href="/role?name={{ $data.Name }}&severity=Low" title="Low" class="bg-blue-100 text-blue-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-blue-900 dark:text-blue-100">
+                                {{ len $data.LowVulnerabilities }}
+                            </a>
+                            {{ end }}
                         </td>
                     </tr>
                     {{ end }}

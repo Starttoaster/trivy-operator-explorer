@@ -43,7 +43,7 @@
         </div>
     </aside>
 
-    <!-- Image name top bar -->
+    <!-- Role name top bar -->
     <nav class="sm:ml-64 bg-white border-gray-200 dark:bg-gray-900">
         <div class="max-w-screen-xl flex flex-wrap justify-between p-4">
           <div class="hidden w-full md:block md:w-auto" id="navbar-default">
@@ -51,19 +51,6 @@
               <li>
                 <span class="block py-2 px-3 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 dark:text-white md:dark:text-blue-200" aria-current="page">{{ .Name }}</span>
               </li>
-              <li>
-                <span class="block py-2 px-3 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-400 md:p-0 dark:text-white md:dark:text-blue-500" aria-current="page">{{ .Digest }}</span>
-              </li>
-              {{ if .OSFamily }}
-              <li>
-                <span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">{{ .OSFamily }} {{ .OSVersion }}</span>
-              </li>
-              {{ end }}
-              {{ if .OSEndOfServiceLife }}
-              <li>
-                <span class="bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-red-900 dark:text-red-300">EoSL</span>
-              </li>
-              {{ end }}
             </ul>
           </div>
         </div>
@@ -76,25 +63,16 @@
                 <thead class="rounded-lg text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                     <tr>
                         <th scope="col" class="px-6 py-3">
-                            CVE
+                            Check
                         </th>
                         <th scope="col" class="px-6 py-3">
                             Severity
                         </th>
                         <th scope="col" class="px-6 py-3">
-                            Score
-                        </th>
-                        <th scope="col" class="px-6 py-3">
-                            Resource
-                        </th>
-                        <th scope="col" class="px-6 py-3">
                             Title
                         </th>
                         <th scope="col" class="px-6 py-3">
-                            Installed
-                        </th>
-                        <th scope="col" class="px-6 py-3">
-                            Fixed In
+                            Description
                         </th>
                     </tr>
                 </thead>
@@ -118,19 +96,10 @@
                             {{end}}
                         </td>
                         <td class="px-6 py-4">
-                            {{ $data.Score }}
-                        </td>
-                        <td class="px-6 py-4">
-                            {{ $data.Resource }}
-                        </td>
-                        <td class="px-6 py-4">
                             {{ $data.Title }}
                         </td>
                         <td class="px-6 py-4">
-                            {{ $data.VulnerableVersion }}
-                        </td>
-                        <td class="px-6 py-4">
-                            {{ $data.FixedVersion }}
+                            {{ $data.Description }}
                         </td>
                     </tr>
                     {{ end }}

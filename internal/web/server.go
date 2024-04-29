@@ -10,6 +10,8 @@ import (
 	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
 	"github.com/starttoaster/trivy-operator-explorer/internal/web/content"
+	clusterroleview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusterrole"
+	clusterrolesview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusterroles"
 	imageview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/image"
 	imagesview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/images"
 	roleview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/role"
@@ -23,6 +25,8 @@ func Start(port string) error {
 	mux.HandleFunc("/image", imageHandler)
 	mux.HandleFunc("/roles", rolesHandler)
 	mux.HandleFunc("/role", roleHandler)
+	mux.HandleFunc("/clusterroles", clusterrolesHandler)
+	mux.HandleFunc("/clusterrole", clusterroleHandler)
 	mux.Handle("/static/", http.FileServer(http.FS(content.Static)))
 	return http.ListenAndServe(fmt.Sprintf(":%s", port), mux)
 }
@@ -194,6 +198,76 @@ func roleHandler(w http.ResponseWriter, r *http.Request) {
 	err = tmpl.Execute(w, role)
 	if err != nil {
 		log.Logger.Error("encountered error executing role html template", "error", err)
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+}
+
+func clusterrolesHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFS(content.Static, "static/clusterroles.html"))
+	if tmpl == nil {
+		log.Logger.Error("encountered error parsing roles html template")
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+
+	// Get role reports
+	reports, err := kube.GetClusterRbacAssessmentReportList()
+	if err != nil {
+		log.Logger.Error("error getting clusterrbacassessmentreports", "error", err.Error())
+		return
+	}
+	roles := clusterrolesview.GetView(reports)
+
+	err = tmpl.Execute(w, roles)
+	if err != nil {
+		log.Logger.Error("encountered error executing roles html template", "error", err)
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+}
+
+func clusterroleHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFS(content.Static, "static/clusterrole.html"))
+	if tmpl == nil {
+		log.Logger.Error("encountered error parsing clusterrole html template")
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+
+	// Parse URL query params
+	q := r.URL.Query()
+
+	// Check query params -- 404 if required params not passed
+	name := q.Get("name")
+	if name == "" {
+		log.Logger.Error("role name query param missing from request")
+		http.NotFound(w, r)
+		return
+	}
+	severity := q.Get("severity")
+
+	// Get clusterrole reports
+	reports, err := kube.GetClusterRbacAssessmentReportList()
+	if err != nil {
+		log.Logger.Error("error getting clusterrbacassessmentreports", "error", err.Error())
+		return
+	}
+	role, found := clusterroleview.GetView(reports, clusterroleview.Filters{
+		Name:     name,
+		Severity: severity,
+	})
+
+	// If the selected clusterrole from query params was not found, 404
+	if !found {
+		log.Logger.Error("clusterrole name query params did not produce a valid result from reports", "name", name)
+		http.NotFound(w, r)
+		return
+	}
+
+	err = tmpl.Execute(w, role)
+	if err != nil {
+		log.Logger.Error("encountered error executing clusterrole html template", "error", err)
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
 		return
 	}

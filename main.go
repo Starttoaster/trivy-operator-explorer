@@ -11,6 +11,8 @@ import (
 
 //go:embed static/roles.html
 //go:embed static/role.html
+//go:embed static/clusterroles.html
+//go:embed static/clusterrole.html
 //go:embed static/images.html
 //go:embed static/image.html
 //go:embed static/css/output.css
