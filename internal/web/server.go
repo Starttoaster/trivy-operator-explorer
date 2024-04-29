@@ -32,7 +32,7 @@ func Start(port string) error {
 }
 
 func imagesHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFS(content.Static, "static/images.html"))
+	tmpl := template.Must(template.ParseFS(content.Static, "static/images.html", "static/sidebar.html"))
 	if tmpl == nil {
 		log.Logger.Error("encountered error parsing images html template")
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
@@ -56,7 +56,7 @@ func imagesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func imageHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFS(content.Static, "static/image.html"))
+	tmpl := template.Must(template.ParseFS(content.Static, "static/image.html", "static/sidebar.html"))
 	if tmpl == nil {
 		log.Logger.Error("encountered error parsing image html template")
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
@@ -127,7 +127,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func rolesHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFS(content.Static, "static/roles.html"))
+	tmpl := template.Must(template.ParseFS(content.Static, "static/roles.html", "static/sidebar.html"))
 	if tmpl == nil {
 		log.Logger.Error("encountered error parsing roles html template")
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
@@ -151,7 +151,7 @@ func rolesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func roleHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFS(content.Static, "static/role.html"))
+	tmpl := template.Must(template.ParseFS(content.Static, "static/role.html", "static/sidebar.html"))
 	if tmpl == nil {
 		log.Logger.Error("encountered error parsing role html template")
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
@@ -204,7 +204,7 @@ func roleHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func clusterrolesHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFS(content.Static, "static/clusterroles.html"))
+	tmpl := template.Must(template.ParseFS(content.Static, "static/clusterroles.html", "static/sidebar.html"))
 	if tmpl == nil {
 		log.Logger.Error("encountered error parsing roles html template")
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
@@ -228,7 +228,7 @@ func clusterrolesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func clusterroleHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFS(content.Static, "static/clusterrole.html"))
+	tmpl := template.Must(template.ParseFS(content.Static, "static/clusterrole.html", "static/sidebar.html"))
 	if tmpl == nil {
 		log.Logger.Error("encountered error parsing clusterrole html template")
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
