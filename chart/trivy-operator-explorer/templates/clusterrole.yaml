@@ -15,10 +15,10 @@ rules:
       - vulnerabilityreports
       - rbacassessmentreports
       - clusterrbacassessmentreports
+      - configauditreports
       #- sbomreports
       #- infraassessmentreports
       #- exposedsecretreports
-      #- configauditreports
       #- clustervulnerabilityreports
       #- clustersbomreports
       #- clusterinfraassessmentreports
