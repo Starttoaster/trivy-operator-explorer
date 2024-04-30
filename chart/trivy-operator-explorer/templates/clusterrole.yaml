@@ -16,12 +16,12 @@ rules:
       - rbacassessmentreports
       - clusterrbacassessmentreports
       - configauditreports
+      - infraassessmentreports
+      - clusterinfraassessmentreports
+      - exposedsecretreports
       #- sbomreports
-      #- infraassessmentreports
-      #- exposedsecretreports
       #- clustervulnerabilityreports
       #- clustersbomreports
-      #- clusterinfraassessmentreports
       #- clusterconfigauditreports
       #- clustercompliancereports
       #- clustercompliancedetailreports
