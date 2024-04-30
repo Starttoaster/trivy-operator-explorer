@@ -51,7 +51,7 @@
                 </thead>
                 <tbody>
                     {{ range $data := .Checks }}
-                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
                         <th scope="row" class="px-6 py-4 font-medium text-black whitespace-nowrap dark:text-white">
                             <a href="{{ $data.URL }}" >
                                 <span class="ms-3">{{ $data.ID }}</span>

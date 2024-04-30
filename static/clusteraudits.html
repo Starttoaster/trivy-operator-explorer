@@ -32,7 +32,7 @@
                 <!-- Table body -->
                 <tbody>
                     {{ range $data := . }}
-                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
                         <!-- Cluster audit column -->
                         <td scope="row" class="px-6 py-4 font-medium text-black whitespace-nowrap dark:text-white">
                             <a href="/clusteraudit?name={{ $data.Name }}&kind={{ $data.Kind }}">
