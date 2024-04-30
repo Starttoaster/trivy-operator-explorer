@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="/static/css/output.css" rel="stylesheet">
 </head>
-<body class="min-h-screen bg-indigo-900">
+<body class="min-h-screen bg-gray-200 dark:bg-indigo-900">
      
     <!-- Sidebar -->
     {{template "sidebar.html"}}
@@ -37,7 +37,7 @@
     </nav>
 
     <!-- Table content -->
-    <div class="p-4 sm:ml-64 bg-indigo-900">
+    <div class="p-4 sm:ml-64 bg-gray-200 dark:bg-indigo-900">
         <div class="relative overflow-x-auto shadow-md rounded-lg">
             <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                 <thead class="rounded-lg text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
@@ -67,36 +67,36 @@
                 </thead>
                 <tbody>
                     {{ range $data := .Vulnerabilities }}
-                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
+                        <th scope="row" class="px-6 py-4 font-medium text-black whitespace-nowrap dark:text-white">
                             <a href="{{ $data.URL }}" >
                                 <span class="ms-3">{{ $data.ID }}</span>
                             </a>
                         </th>
                         <td class="px-6 py-4">
                             {{if eq $data.Severity "CRITICAL"}}
-                            <span class="bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-100">{{ $data.Severity }}</span>
+                            <span class="bg-red-200 text-black text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-100">{{ $data.Severity }}</span>
                             {{else if eq $data.Severity "HIGH"}}
-                            <span class="bg-orange-100 text-orange-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-orange-900 dark:text-orange-100">{{ $data.Severity }}</span>
+                            <span class="bg-orange-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-orange-900 dark:text-orange-100">{{ $data.Severity }}</span>
                             {{else if eq $data.Severity "MEDIUM"}}
-                            <span class="bg-yellow-100 text-yellow-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-yellow-900 dark:text-yellow-100">{{ $data.Severity }}</span>
+                            <span class="bg-yellow-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-yellow-900 dark:text-yellow-100">{{ $data.Severity }}</span>
                             {{else if eq $data.Severity "LOW"}}
-                            <span class="bg-blue-100 text-blue-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-blue-900 dark:text-blue-100">{{ $data.Severity }}</span>
+                            <span class="bg-blue-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-blue-900 dark:text-blue-100">{{ $data.Severity }}</span>
                             {{end}}
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-6 py-4 text-black dark:text-white">
                             {{ $data.Score }}
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-6 py-4 text-black dark:text-white">
                             {{ $data.Resource }}
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-6 py-4 text-black dark:text-white">
                             {{ $data.Title }}
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-6 py-4 text-black dark:text-white">
                             {{ $data.VulnerableVersion }}
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-6 py-4 text-black dark:text-white">
                             {{ $data.FixedVersion }}
                         </td>
                     </tr>

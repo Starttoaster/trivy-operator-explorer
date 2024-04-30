@@ -6,13 +6,13 @@
   <link href="/static/css/output.css" rel="stylesheet">
   <link href="/static/css/extra.css" rel="stylesheet">
 </head>
-<body class="min-h-screen bg-indigo-900">
+<body class="min-h-screen bg-gray-200 dark:bg-indigo-900">
      
     <!-- Sidebar -->
     {{template "sidebar.html"}}
 
     <!-- Table content -->
-    <div class="p-4 sm:ml-64 bg-indigo-900">
+    <div class="p-4 sm:ml-64 bg-gray-200 dark:bg-indigo-900">
         <div class="relative overflow-x-auto shadow-md rounded-lg">
             <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                 <!-- Table headers -->
@@ -35,7 +35,7 @@
                 <!-- Table body -->
                 <tbody>
                     {{ range $data := . }}
-                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
                         <!-- Image column -->
                         <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                             <a href="/image?image={{ $data.Name }}&digest={{ $data.Digest }}" title="{{ $data.Digest }}">
@@ -50,17 +50,17 @@
                         <!-- Affected Resources column -->
                         <td class="px-6 py-4">
                             <div class="dropdown shadow-md relative rounded-lg">
-                                <button id="podDropdownButton" data-dropdown-toggle="dropdown" class="dark:text-white bg-blue-800 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-800 dark:hover:bg-blue-700 dark:focus:ring-blue-800" type="button">
+                                <button id="podDropdownButton" data-dropdown-toggle="dropdown" class="text-black dark:text-white bg-blue-300 dark:bg-blue-800 hover:bg-blue-500 dark:hover:bg-blue-700 dark:focus:ring-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center" type="button">
                                     {{ len $data.Resources }}
                                     <svg class="w-2.5 h-2.5 ms-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
                                         <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/>
                                     </svg>
                                 </button>
                                 <div class="dropdown-content shadow-md relative rounded-lg">
-                                    <ul class="px-1 py-1 rounded-lg text-lg font-medium text-white dark:text-white dark:bg-indigo-800 dark:border-gray-700" aria-labelledby="dropdownDefaultButton">
+                                    <ul class="px-1 py-1 rounded-lg text-lg font-medium text-black dark:text-white bg-gray-200 dark:bg-indigo-800 border-gray-700 dark:border-gray-700" aria-labelledby="dropdownDefaultButton">
                                         {{ range $resData, $nada := $data.Resources }}
                                         <li>
-                                          <a href="#" class="block dark:hover:bg-indigo-900">{{ $resData.Kind }}/{{ $resData.Namespace }}/{{ $resData.Name }}</a>
+                                          <a href="#" class="block hover:bg-gray-300 dark:hover:bg-indigo-900">{{ $resData.Kind }}/{{ $resData.Namespace }}/{{ $resData.Name }}</a>
                                         </li>
                                         {{ end }}
                                     </ul>
@@ -70,22 +70,22 @@
                         <!-- Vulnerabilities column -->
                         <td class="px-6 py-4">
                             {{ if $data.CriticalVulnerabilities }}
-                            <a href="/image?image={{ $data.Name }}&digest={{ $data.Digest }}&severity=Critical" title="Critical" class="bg-red-100 text-red-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-red-900 dark:text-red-100">
+                            <a href="/image?image={{ $data.Name }}&digest={{ $data.Digest }}&severity=Critical" title="Critical" class="bg-red-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-red-900 dark:text-red-100">
                                 {{ len $data.CriticalVulnerabilities }}
                             </a>
                             {{ end }}
                             {{ if $data.HighVulnerabilities }}
-                            <a href="/image?image={{ $data.Name }}&digest={{ $data.Digest }}&severity=High" title="High" class="bg-orange-100 text-orange-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-orange-900 dark:text-orange-100">
+                            <a href="/image?image={{ $data.Name }}&digest={{ $data.Digest }}&severity=High" title="High" class="bg-orange-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-orange-900 dark:text-orange-100">
                                 {{ len $data.HighVulnerabilities }}
                             </a>
                             {{ end }}
                             {{ if $data.MediumVulnerabilities }}
-                            <a href="/image?image={{ $data.Name }}&digest={{ $data.Digest }}&severity=Medium" title="Medium" class="bg-yellow-100 text-yellow-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-yellow-900 dark:text-yellow-100">
+                            <a href="/image?image={{ $data.Name }}&digest={{ $data.Digest }}&severity=Medium" title="Medium" class="bg-yellow-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-yellow-900 dark:text-yellow-100">
                                 {{ len $data.MediumVulnerabilities }}
                             </a>
                             {{ end }}
                             {{ if $data.LowVulnerabilities }}
-                            <a href="/image?image={{ $data.Name }}&digest={{ $data.Digest }}&severity=Low" title="Low" class="bg-blue-100 text-blue-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-blue-900 dark:text-blue-100">
+                            <a href="/image?image={{ $data.Name }}&digest={{ $data.Digest }}&severity=Low" title="Low" class="bg-blue-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-blue-900 dark:text-blue-100">
                                 {{ len $data.LowVulnerabilities }}
                             </a>
                             {{ end }}
