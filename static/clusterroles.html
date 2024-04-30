@@ -6,13 +6,13 @@
   <link href="/static/css/output.css" rel="stylesheet">
   <link href="/static/css/extra.css" rel="stylesheet">
 </head>
-<body class="min-h-screen bg-indigo-900">
+<body class="min-h-screen bg-gray-200 dark:bg-indigo-900">
      
     <!-- Sidebar -->
     {{template "sidebar.html"}}
 
     <!-- Table content -->
-    <div class="p-4 sm:ml-64 bg-indigo-900">
+    <div class="p-4 sm:ml-64 bg-gray-200 dark:bg-indigo-900">
         <div class="relative overflow-x-auto shadow-md rounded-lg">
             <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                 <!-- Table headers -->
@@ -34,33 +34,33 @@
                     {{ range $data := . }}
                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
                         <!-- Roles column -->
-                        <td scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                        <td scope="row" class="px-6 py-4 font-medium text-black whitespace-nowrap dark:text-white">
                             <a href="/clusterrole?name={{ $data.Name }}">
                                 {{ $data.Name }}
                             </a>
                         </td>
-                        <td scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                        <td scope="row" class="px-6 py-4 font-medium text-black whitespace-nowrap dark:text-white">
                             {{ $data.Kind }}
                         </td>
                         <!-- Checks column -->
                         <td class="px-6 py-4">
                             {{ if $data.CriticalVulnerabilities }}
-                            <a href="/clusterrole?name={{ $data.Name }}&severity=Critical" title="Critical" class="bg-red-100 text-red-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-red-900 dark:text-red-100">
+                            <a href="/clusterrole?name={{ $data.Name }}&severity=Critical" title="Critical" class="bg-red-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-red-900 dark:text-red-100">
                                 {{ len $data.CriticalVulnerabilities }}
                             </a>
                             {{ end }}
                             {{ if $data.HighVulnerabilities }}
-                            <a href="/clusterrole?name={{ $data.Name }}&severity=High" title="High" class="bg-orange-100 text-orange-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-orange-900 dark:text-orange-100">
+                            <a href="/clusterrole?name={{ $data.Name }}&severity=High" title="High" class="bg-orange-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-orange-900 dark:text-orange-100">
                                 {{ len $data.HighVulnerabilities }}
                             </a>
                             {{ end }}
                             {{ if $data.MediumVulnerabilities }}
-                            <a href="/clusterrole?name={{ $data.Name }}&severity=Medium" title="Medium" class="bg-yellow-100 text-yellow-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-yellow-900 dark:text-yellow-100">
+                            <a href="/clusterrole?name={{ $data.Name }}&severity=Medium" title="Medium" class="bg-yellow-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-yellow-900 dark:text-yellow-100">
                                 {{ len $data.MediumVulnerabilities }}
                             </a>
                             {{ end }}
                             {{ if $data.LowVulnerabilities }}
-                            <a href="/clusterrole?name={{ $data.Name }}&severity=Low" title="Low" class="bg-blue-100 text-blue-800 text-xs font-medium me-1 px-2 py-2 rounded dark:bg-blue-900 dark:text-blue-100">
+                            <a href="/clusterrole?name={{ $data.Name }}&severity=Low" title="Low" class="bg-blue-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-blue-900 dark:text-blue-100">
                                 {{ len $data.LowVulnerabilities }}
                             </a>
                             {{ end }}
