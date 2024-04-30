@@ -12,6 +12,8 @@ import (
 //go:embed static/sidebar.html
 //go:embed static/configaudits.html
 //go:embed static/configaudit.html
+//go:embed static/clusteraudits.html
+//go:embed static/clusteraudit.html
 //go:embed static/roles.html
 //go:embed static/role.html
 //go:embed static/clusterroles.html

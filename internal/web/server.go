@@ -10,6 +10,8 @@ import (
 	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
 	"github.com/starttoaster/trivy-operator-explorer/internal/web/content"
+	clusterauditview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusteraudit"
+	clusterauditsview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusteraudits"
 	clusterroleview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusterrole"
 	clusterrolesview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusterroles"
 	configauditview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/configaudit"
@@ -31,6 +33,8 @@ func Start(port string) error {
 	mux.HandleFunc("/clusterrole", clusterroleHandler)
 	mux.HandleFunc("/configaudits", configauditsHandler)
 	mux.HandleFunc("/configaudit", configauditHandler)
+	mux.HandleFunc("/clusteraudits", clusterauditsHandler)
+	mux.HandleFunc("/clusteraudit", clusterauditHandler)
 	mux.Handle("/static/", http.FileServer(http.FS(content.Static)))
 	return http.ListenAndServe(fmt.Sprintf(":%s", port), mux)
 }
@@ -356,6 +360,83 @@ func configauditHandler(w http.ResponseWriter, r *http.Request) {
 	err = tmpl.Execute(w, audit)
 	if err != nil {
 		log.Logger.Error("encountered error executing configaudit html template", "error", err)
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+}
+
+func clusterauditsHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFS(content.Static, "static/clusteraudits.html", "static/sidebar.html"))
+	if tmpl == nil {
+		log.Logger.Error("encountered error parsing clusteraudits html template")
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+
+	// Get reports
+	reports, err := kube.GetClusterInfraAssessmentReportList()
+	if err != nil {
+		log.Logger.Error("error getting clusterinfraassessmentreports", "error", err.Error())
+		return
+	}
+	audits := clusterauditsview.GetView(reports)
+
+	err = tmpl.Execute(w, audits)
+	if err != nil {
+		log.Logger.Error("encountered error executing clusteraudits html template", "error", err)
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+}
+
+func clusterauditHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFS(content.Static, "static/clusteraudit.html", "static/sidebar.html"))
+	if tmpl == nil {
+		log.Logger.Error("encountered error parsing clusteraudit html template")
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+
+	// Parse URL query params
+	q := r.URL.Query()
+
+	// Check query params -- 404 if required params not passed
+	name := q.Get("name")
+	if name == "" {
+		log.Logger.Error("cluster audit name query param missing from request")
+		http.NotFound(w, r)
+		return
+	}
+	kind := q.Get("kind")
+	if kind == "" {
+		log.Logger.Error("cluster audit kind query param missing from request")
+		http.NotFound(w, r)
+		return
+	}
+	severity := q.Get("severity")
+
+	// Get clusteraudit reports
+	reports, err := kube.GetClusterInfraAssessmentReportList()
+	if err != nil {
+		log.Logger.Error("error getting clusterinfraassessmentreports", "error", err.Error())
+		return
+	}
+	audit, found := clusterauditview.GetView(reports, clusterauditview.Filters{
+		Name:     name,
+		Kind:     kind,
+		Severity: severity,
+	})
+
+	// If the selected resource from query params was not found, 404
+	if !found {
+		log.Logger.Error("resource name query params did not produce a valid result from reports", "name", name)
+		http.NotFound(w, r)
+		return
+	}
+
+	err = tmpl.Execute(w, audit)
+	if err != nil {
+		log.Logger.Error("encountered error executing clusteraudit html template", "error", err)
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
 		return
 	}
