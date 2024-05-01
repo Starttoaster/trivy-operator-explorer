@@ -41,14 +41,6 @@ Example URL: `http://your.explorer.install/image?hasfix=true&severity=Critical`
 
 There are query parameters for image and digest as well, but it's not expected for them to be changed manually. These filters currently do not have a graphical toggle but there's a TODO item below to add some form elements to the page for them.
 
-### ClusterRole/Role/Exposed Secrets filter
-
-| Parameters   | Description                                                           | Example                   |
-|--------------|-----------------------------------------------------------------------|---------------------------|
-| severity     | Filter by level of vulnerability severity.                            | severity=Critical         |
-
-Example URL: `http://your.explorer.install/role?severity=Critical`
-
 ## TODO
 
 - Make a home page that displays useful graphs for each of the report types.

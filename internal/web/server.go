@@ -146,13 +146,21 @@ func rolesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Parse URL query params
+	q := r.URL.Query()
+
+	// Check query params
+	namespace := q.Get("namespace")
+
 	// Get role reports
 	reports, err := kube.GetRbacAssessmentReportList()
 	if err != nil {
 		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		return
 	}
-	roles := rolesview.GetView(reports)
+	roles := rolesview.GetView(reports, rolesview.Filters{
+		Namespace: namespace,
+	})
 
 	err = tmpl.Execute(w, roles)
 	if err != nil {
@@ -293,13 +301,23 @@ func configauditsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Parse URL query params
+	q := r.URL.Query()
+
+	// Check query params
+	namespace := q.Get("namespace")
+	kind := q.Get("kind")
+
 	// Get reports
 	reports, err := kube.GetConfigAuditReportList()
 	if err != nil {
 		log.Logger.Error("error getting configauditreports", "error", err.Error())
 		return
 	}
-	audits := configauditsview.GetView(reports)
+	audits := configauditsview.GetView(reports, configauditsview.Filters{
+		Namespace: namespace,
+		Kind:      kind,
+	})
 
 	err = tmpl.Execute(w, audits)
 	if err != nil {
