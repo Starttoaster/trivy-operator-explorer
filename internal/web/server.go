@@ -51,13 +51,29 @@ func imagesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Parse URL query params
+	q := r.URL.Query()
+
+	// Check query params
+	hasFix := q.Get("hasfix")
+	var hasFixBool bool
+	if hasFix != "" {
+		var err error
+		hasFixBool, err = strconv.ParseBool(hasFix)
+		if err != nil {
+			log.Logger.Warn("could not parse hasfix query parameter to bool type, ignoring filter", "raw", hasFix, "error", err.Error())
+		}
+	}
+
 	// Get vulnerability reports
 	data, err := kube.GetVulnerabilityReportList()
 	if err != nil {
 		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		return
 	}
-	imageData := imagesview.GetView(data)
+	imageData := imagesview.GetView(data, imagesview.Filters{
+		HasFix: hasFixBool,
+	})
 
 	err = tmpl.Execute(w, imageData)
 	if err != nil {
@@ -146,13 +162,21 @@ func rolesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Parse URL query params
+	q := r.URL.Query()
+
+	// Check query params
+	namespace := q.Get("namespace")
+
 	// Get role reports
 	reports, err := kube.GetRbacAssessmentReportList()
 	if err != nil {
 		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		return
 	}
-	roles := rolesview.GetView(reports)
+	roles := rolesview.GetView(reports, rolesview.Filters{
+		Namespace: namespace,
+	})
 
 	err = tmpl.Execute(w, roles)
 	if err != nil {
@@ -293,13 +317,23 @@ func configauditsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Parse URL query params
+	q := r.URL.Query()
+
+	// Check query params
+	namespace := q.Get("namespace")
+	kind := q.Get("kind")
+
 	// Get reports
 	reports, err := kube.GetConfigAuditReportList()
 	if err != nil {
 		log.Logger.Error("error getting configauditreports", "error", err.Error())
 		return
 	}
-	audits := configauditsview.GetView(reports)
+	audits := configauditsview.GetView(reports, configauditsview.Filters{
+		Namespace: namespace,
+		Kind:      kind,
+	})
 
 	err = tmpl.Execute(w, audits)
 	if err != nil {

@@ -26,7 +26,7 @@ trivy-operator-explorer
 
 ## Filters
 
-Some dashboards have filters available. These filters are only set-able from the URL in query parameters for now, as there are no forms on the explorer yet, though it is planned.
+Some dashboards have filters that can be set from clicking elements on the page, but the following can only be set manually from the URL query parameters for now. UI elements might be added for these over time. 
 
 ### Image filter
 
@@ -39,18 +39,7 @@ Some dashboards have filters available. These filters are only set-able from the
 
 Example URL: `http://your.explorer.install/image?hasfix=true&severity=Critical`
 
-There are query parameters for image and digest as well, but it's not expected for them to be changed manually. These filters currently do not have a graphical toggle but there's a TODO item below to add some form elements to the page for them.
-
-### ClusterRole/Role/Exposed Secrets filter
-
-| Parameters   | Description                                                           | Example                   |
-|--------------|-----------------------------------------------------------------------|---------------------------|
-| severity     | Filter by level of vulnerability severity.                            | severity=Critical         |
-
-Example URL: `http://your.explorer.install/role?severity=Critical`
-
 ## TODO
 
 - Make a home page that displays useful graphs for each of the report types.
-- Graphical elements for setting filters, currently they're just URL query parameters.
-- Testing. Pretty sure by law no new product can have tests.
+- Graphical elements for setting the filters on the /image page

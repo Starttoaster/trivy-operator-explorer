@@ -7,8 +7,13 @@ import (
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
 )
 
+// Filters represents the available optional filters to the roles audit view
+type Filters struct {
+	Namespace string
+}
+
 // GetView converts some report data to the /roles view
-func GetView(data *v1alpha1.RbacAssessmentReportList) View {
+func GetView(data *v1alpha1.RbacAssessmentReportList, filters Filters) View {
 	var r View
 
 	for _, item := range data.Items {
@@ -21,10 +26,17 @@ func GetView(data *v1alpha1.RbacAssessmentReportList) View {
 			name = item.Name
 		}
 
+		namespace := item.ObjectMeta.Labels["trivy-operator.resource.namespace"]
+		if filters.Namespace != "" {
+			if namespace != filters.Namespace {
+				continue
+			}
+		}
+
 		role := Data{
 			Kind:      item.ObjectMeta.Labels["trivy-operator.resource.kind"],
 			Name:      name,
-			Namespace: item.ObjectMeta.Labels["trivy-operator.resource.namespace"],
+			Namespace: namespace,
 		}
 
 		index, unique := r.isUniqueRole(role.Name, role.Namespace, role.Kind)

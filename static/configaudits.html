@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-  <title>Explorer: configaudits</title>
+  <title>Explorer: Config Audits</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="/static/css/output.css" rel="stylesheet">
@@ -38,7 +38,7 @@
                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
                         <!-- Roles column -->
                         <td scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                            <a href="/configaudit?name={{ $data.Name }}&namespace={{ $data.Namespace }}&kind={{ $data.Kind }}">
+                            <a href="/configaudits?namespace={{ $data.Namespace }}">
                                 {{ $data.Namespace }}
                             </a>
                         </td>
@@ -48,7 +48,7 @@
                             </a>
                         </td>
                         <td scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                            <a href="/configaudit?name={{ $data.Name }}&namespace={{ $data.Namespace }}&kind={{ $data.Kind }}">
+                            <a href="/configaudits?kind={{ $data.Kind }}">
                                 {{ $data.Kind }}
                             </a>
                         </td>
