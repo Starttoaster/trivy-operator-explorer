@@ -8,8 +8,13 @@ import (
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
 )
 
+// Filters represents the available optional filters to the images view
+type Filters struct {
+	HasFix bool
+}
+
 // GetView converts some report data to the /images view
-func GetView(data *v1alpha1.VulnerabilityReportList) View {
+func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters) View {
 	var i View
 
 	for _, item := range data.Items {
@@ -60,6 +65,13 @@ func GetView(data *v1alpha1.VulnerabilityReportList) View {
 				Title:             v.Title,
 				VulnerableVersion: v.InstalledVersion,
 				FixedVersion:      v.FixedVersion,
+			}
+
+			// Filter by hasfix
+			if filters.HasFix {
+				if strings.TrimSpace(vuln.FixedVersion) == "" {
+					continue
+				}
 			}
 
 			// If the image is not unique, we need to check if the vulnerability is unique too

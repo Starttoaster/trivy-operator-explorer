@@ -51,13 +51,29 @@ func imagesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Parse URL query params
+	q := r.URL.Query()
+
+	// Check query params
+	hasFix := q.Get("hasfix")
+	var hasFixBool bool
+	if hasFix != "" {
+		var err error
+		hasFixBool, err = strconv.ParseBool(hasFix)
+		if err != nil {
+			log.Logger.Warn("could not parse hasfix query parameter to bool type, ignoring filter", "raw", hasFix, "error", err.Error())
+		}
+	}
+
 	// Get vulnerability reports
 	data, err := kube.GetVulnerabilityReportList()
 	if err != nil {
 		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		return
 	}
-	imageData := imagesview.GetView(data)
+	imageData := imagesview.GetView(data, imagesview.Filters{
+		HasFix: hasFixBool,
+	})
 
 	err = tmpl.Execute(w, imageData)
 	if err != nil {
