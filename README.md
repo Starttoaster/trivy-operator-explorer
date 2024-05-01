@@ -40,5 +40,8 @@ Example URL: `http://your.explorer.install/image?hasfix=true&severity=Critical`
 
 ## TODO
 
-- Make a home page that displays useful graphs for each of the report types.
+See [CONTRIBUTING.md](CONTRIBUTING.md) if you'd like to contribute an item on this list. Please make an Issue if you would like to see something added to this list.
+
+- Dashboard for CIS/NSA/PSS compliance results, maybe made the home page, and move the images view to /images
+- SBOM dashboard
 - Graphical elements for setting the filters on the /image page
