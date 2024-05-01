@@ -35,7 +35,6 @@ Some dashboards have filters that can be set from clicking elements on the page,
 | hasfix       | Boolean to only view vulnerabilities that have a fix version, or not. | hasfix=true, hasfix=false |
 | resources    | Comma-separated list of resources to view vulnerabilities for.        | resources=curl,zlib1g     |
 | notresources | Comma-separated list of resources to ignore vulnerabilities for.      | notresources=curl,zlib1g  |
-| severity     | Filter by level of vulnerability severity.                            | severity=Critical         |
 
 Example URL: `http://your.explorer.install/image?hasfix=true&severity=Critical`
 
