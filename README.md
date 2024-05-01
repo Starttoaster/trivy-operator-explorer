@@ -18,7 +18,7 @@ Install with the helm chart:
 
 ```bash
 helm upgrade --install --create-namespace \
---repo "https://starttoaster.github.io/trivy-operator-explorer" 
+--repo "https://starttoaster.github.io/trivy-operator-explorer" \
 -n trivy-explorer \
 trivy-operator-explorer \
 trivy-operator-explorer
@@ -36,7 +36,7 @@ Some dashboards have filters that can be set from clicking elements on the page,
 | resources    | Comma-separated list of resources to view vulnerabilities for.        | resources=curl,zlib1g     |
 | notresources | Comma-separated list of resources to ignore vulnerabilities for.      | notresources=curl,zlib1g  |
 
-Example URL: `http://your.explorer.install/image?hasfix=true&severity=Critical`
+Example URL: `http://your.explorer.install/image?hasfix=true&resources=curl,zlib1g`
 
 ## TODO
 
