@@ -36,8 +36,6 @@ spec:
               containerPort: {{ .Values.config.port }}
               protocol: TCP
           env:
-            - name: TRIVY_OPERATOR_EXPLORER_METRICS_ENDPOINT
-              value: '{{ .Values.config.metrics_endpoint }}'
             - name: TRIVY_OPERATOR_EXPLORER_LOG_LEVEL
               value: '{{ .Values.config.log_level }}'
             - name: TRIVY_OPERATOR_EXPLORER_SERVER_PORT
