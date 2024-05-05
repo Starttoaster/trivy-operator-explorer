@@ -27,7 +27,8 @@ import (
 // Start starts the webserver
 func Start(port string) error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", imagesHandler)
+	mux.HandleFunc("/", indexHandler)
+	mux.HandleFunc("/images", imagesHandler)
 	mux.HandleFunc("/image", imageHandler)
 	mux.HandleFunc("/configaudits", configauditsHandler)
 	mux.HandleFunc("/configaudit", configauditHandler)
@@ -43,6 +44,24 @@ func Start(port string) error {
 	// this serves the html templates for no reason
 	mux.Handle("/static/", http.FileServer(http.FS(content.Static)))
 	return http.ListenAndServe(fmt.Sprintf(":%s", port), mux)
+}
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFS(content.Static, "static/index.html", "static/sidebar.html"))
+	if tmpl == nil {
+		log.Logger.Error("encountered error parsing index html template")
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+
+	// TODO get all the data for graphs
+
+	err := tmpl.Execute(w, nil)
+	if err != nil {
+		log.Logger.Error("encountered error executing index html template", "error", err)
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
 }
 
 func imagesHandler(w http.ResponseWriter, r *http.Request) {

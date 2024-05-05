@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <title>Explorer: Images</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="/static/css/output.css" rel="stylesheet">
+  <link href="/static/css/extra.css" rel="stylesheet">
+  <script src="/static/js/chart.js"></script>
+</head>
+<body class="min-h-screen bg-gray-200 dark:bg-indigo-900">
+     
+    <!-- Sidebar -->
+    {{template "sidebar.html"}}
+
+    <div class="p-4 sm:ml-64 bg-gray-200 dark:bg-indigo-900">
+         <!-- Graph content -->
+        <div class="p-4 relative overflow-x-auto shadow-md rounded-lg bg-gray-50 dark:bg-gray-800">
+            <div class="w-full text-xl text-center text-black dark:text-white">
+                <h2>Image Vulnerabilities</h2>
+            </div>
+
+            <div id="images-wrapper">
+                <div id="c1"><canvas id="vulnChart"></canvas></div>
+                <div id="c2"><canvas id="fixedChart"></canvas></div>
+            </div>
+
+            <script defer>
+                Chart.defaults.font.size = 16;
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    Chart.defaults.color = '#fff';
+                } else {
+                    Chart.defaults.color = '#000';
+                }
+                new Chart(document.getElementById('vulnChart'), {
+                    type: 'bar',
+                    data: {
+                      labels: ['Critical', 'High', 'Medium', 'Low'],
+                      datasets: [{
+                        label: 'Severity',
+                        data: [12, 19, 3, 5],
+                        backgroundColor: [
+                            'rgba(255, 0, 0, 1)',
+                            'rgba(255, 72, 21, 1)',
+                            'yellow',
+                            'rgba(30, 30, 210, 1)'
+                        ],
+                      }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            </script>
+
+            <script defer>
+                Chart.defaults.font.size = 16;
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    Chart.defaults.color = '#fff';
+                } else {
+                    Chart.defaults.color = '#000';
+                }
+                new Chart(document.getElementById('fixedChart'), {
+                    type: 'doughnut',
+                    data: {
+                      labels: ['Has fix', 'No fix'],
+                      datasets: [{
+                        label: 'Fix Available',
+                        data: [12, 19],
+                        backgroundColor: [
+                            'rgba(30, 30, 210, 0.8)',
+                            'rgba(255, 0, 0, 0.8)'
+                        ],
+                      }]
+                    },
+                    options: {
+                        borderWidth: 0,
+                        responsive: true
+                    }
+                });
+            </script>
+
+        </div>
+    </div>
+</body>
+</html>
