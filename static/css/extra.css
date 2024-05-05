@@ -21,3 +21,18 @@
 
 /* Show the dropdown menu on hover */
 .dropdown:hover .dropdown-content {display: block;}
+
+#images-wrapper {
+  display: flex;
+  justify-content: space-between;
+}
+#c1 {
+  width: 45%; /* Adjust width as needed */
+  display: inline-block; /* Display inline to sit next to each other */
+  margin: 10px; /* Add some margin for spacing */
+}
+#c2 {
+  width: 20%; /* Adjust width as needed */
+  display: inline-block; /* Display inline to sit next to each other */
+  margin: 10px; /* Add some margin for spacing */
+}

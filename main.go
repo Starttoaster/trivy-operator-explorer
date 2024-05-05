@@ -24,6 +24,7 @@ import (
 //go:embed static/image.html
 //go:embed static/css/output.css
 //go:embed static/css/extra.css
+//go:embed static/js/chart.js
 var static embed.FS
 
 func main() {

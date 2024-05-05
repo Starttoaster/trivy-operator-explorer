@@ -39,6 +39,8 @@ func Start(port string) error {
 	mux.HandleFunc("/exposedsecret", exposedsecretHandler)
 	mux.HandleFunc("/roles", rolesHandler)
 	mux.HandleFunc("/role", roleHandler)
+	// TODO just serve the js and css directories in static
+	// this serves the html templates for no reason
 	mux.Handle("/static/", http.FileServer(http.FS(content.Static)))
 	return http.ListenAndServe(fmt.Sprintf(":%s", port), mux)
 }
