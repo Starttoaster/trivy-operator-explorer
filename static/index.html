@@ -17,7 +17,7 @@
         <div class="p-4 relative overflow-x-auto shadow-md rounded-lg bg-gray-50 dark:bg-gray-800">
             <div class="w-full text-xl text-center text-black dark:text-white">
                 <a href="/images">
-                    <h2>Image Vulnerabilities</h2>
+                    Image Vulnerabilities
                 </a>
             </div>
 
@@ -73,11 +73,11 @@
                     data: {
                       labels: ['Not EoSL', 'EoSL'],
                       datasets: [{
-                        label: 'End of Service Life Images',
+                        label: 'End of Service Life images',
                         data: [{{ .NoEOSLCount }}, {{ .EOSLCount }}],
                         backgroundColor: [
-                            'rgba(30, 30, 210, 1)',
-                            'rgba(255, 0, 0, 1)'
+                            'rgba(39, 245, 127, 1)',
+                            'rgba(249, 51, 51, 1)'
                         ],
                       }]
                     },
@@ -103,8 +103,8 @@
                         label: 'Fix Available',
                         data: [{{ .FixAvailableCount }}, {{ .NoFixAvailableCount }}],
                         backgroundColor: [
-                            'rgba(30, 30, 210, 1)',
-                            'rgba(255, 0, 0, 1)'
+                            'rgba(39, 245, 127, 1)',
+                            'rgba(249, 51, 51, 1)'
                         ],
                       }]
                     },
