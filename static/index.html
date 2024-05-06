@@ -13,15 +13,18 @@
     {{template "sidebar.html"}}
 
     <div class="p-4 sm:ml-64 bg-gray-200 dark:bg-indigo-900">
-         <!-- Graph content -->
+         <!-- Images content -->
         <div class="p-4 relative overflow-x-auto shadow-md rounded-lg bg-gray-50 dark:bg-gray-800">
             <div class="w-full text-xl text-center text-black dark:text-white">
-                <h2>Image Vulnerabilities</h2>
+                <a href="/images">
+                    <h2>Image Vulnerabilities</h2>
+                </a>
             </div>
 
             <div id="images-wrapper">
                 <div id="c1"><canvas id="vulnChart"></canvas></div>
-                <div id="c2"><canvas id="fixedChart"></canvas></div>
+                <div id="c2"><canvas id="eoslChart"></canvas></div>
+                <div id="c3"><canvas id="fixedChart"></canvas></div>
             </div>
 
             <script defer>
@@ -37,11 +40,11 @@
                       labels: ['Critical', 'High', 'Medium', 'Low'],
                       datasets: [{
                         label: 'Severity',
-                        data: [12, 19, 3, 5],
+                        data: [{{ .CriticalVulnerabilities }}, {{ .HighVulnerabilities }}, {{ .MediumVulnerabilities }}, {{ .LowVulnerabilities }}],
                         backgroundColor: [
                             'rgba(255, 0, 0, 1)',
-                            'rgba(255, 72, 21, 1)',
-                            'yellow',
+                            'rgba(255, 125, 20, 1)',
+                            'rgba(255, 255, 0, 1)',
                             'rgba(30, 30, 210, 1)'
                         ],
                       }]
@@ -65,16 +68,16 @@
                 } else {
                     Chart.defaults.color = '#000';
                 }
-                new Chart(document.getElementById('fixedChart'), {
-                    type: 'doughnut',
+                new Chart(document.getElementById('eoslChart'), {
+                    type: 'pie',
                     data: {
-                      labels: ['Has fix', 'No fix'],
+                      labels: ['Not EoSL', 'EoSL'],
                       datasets: [{
-                        label: 'Fix Available',
-                        data: [12, 19],
+                        label: 'End of Service Life Images',
+                        data: [{{ .NoEOSLCount }}, {{ .EOSLCount }}],
                         backgroundColor: [
-                            'rgba(30, 30, 210, 0.8)',
-                            'rgba(255, 0, 0, 0.8)'
+                            'rgba(30, 30, 210, 1)',
+                            'rgba(255, 0, 0, 1)'
                         ],
                       }]
                     },
@@ -85,6 +88,32 @@
                 });
             </script>
 
+            <script defer>
+                Chart.defaults.font.size = 16;
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    Chart.defaults.color = '#fff';
+                } else {
+                    Chart.defaults.color = '#000';
+                }
+                new Chart(document.getElementById('fixedChart'), {
+                    type: 'pie',
+                    data: {
+                      labels: ['Has fix', 'No fix'],
+                      datasets: [{
+                        label: 'Fix Available',
+                        data: [{{ .FixAvailableCount }}, {{ .NoFixAvailableCount }}],
+                        backgroundColor: [
+                            'rgba(30, 30, 210, 1)',
+                            'rgba(255, 0, 0, 1)'
+                        ],
+                      }]
+                    },
+                    options: {
+                        borderWidth: 0,
+                        responsive: true
+                    }
+                });
+            </script>
         </div>
     </div>
 </body>

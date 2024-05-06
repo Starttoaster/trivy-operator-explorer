@@ -27,12 +27,17 @@
   justify-content: space-between;
 }
 #c1 {
-  width: 45%; /* Adjust width as needed */
-  display: inline-block; /* Display inline to sit next to each other */
-  margin: 10px; /* Add some margin for spacing */
+  width: 45%;
+  display: inline-block;
+  margin: 10px;
 }
 #c2 {
-  width: 20%; /* Adjust width as needed */
-  display: inline-block; /* Display inline to sit next to each other */
-  margin: 10px; /* Add some margin for spacing */
+  width: 20%;
+  display: inline-block;
+  margin: 10px;
+}
+#c3 {
+  width: 20%;
+  display: inline-block;
+  margin: 10px;
 }

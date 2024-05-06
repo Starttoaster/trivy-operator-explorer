@@ -20,6 +20,7 @@ import (
 	exposedsecretsview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/exposedsecrets"
 	imageview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/image"
 	imagesview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/images"
+	indexview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/index"
 	roleview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/role"
 	rolesview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/roles"
 )
@@ -54,9 +55,18 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO get all the data for graphs
+	// Get vulnerability reports
+	data, err := kube.GetVulnerabilityReportList()
+	if err != nil {
+		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
+		return
+	}
+	imageData := imagesview.GetView(data, imagesview.Filters{})
 
-	err := tmpl.Execute(w, nil)
+	// Get index view
+	indexData := indexview.GetView(imageData)
+
+	err = tmpl.Execute(w, indexData)
 	if err != nil {
 		log.Logger.Error("encountered error executing index html template", "error", err)
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
