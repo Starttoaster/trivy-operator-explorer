@@ -67,6 +67,13 @@ func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters) View {
 				FixedVersion:      v.FixedVersion,
 			}
 
+			// Fixed version counter for index page
+			if vuln.FixedVersion != "" {
+				i[imageIndex].FixAvailableCount++
+			} else {
+				i[imageIndex].NoFixAvailableCount++
+			}
+
 			// Filter by hasfix
 			if filters.HasFix {
 				if strings.TrimSpace(vuln.FixedVersion) == "" {

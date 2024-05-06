@@ -20,6 +20,7 @@ import (
 	exposedsecretsview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/exposedsecrets"
 	imageview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/image"
 	imagesview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/images"
+	indexview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/index"
 	roleview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/role"
 	rolesview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/roles"
 )
@@ -27,7 +28,8 @@ import (
 // Start starts the webserver
 func Start(port string) error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", imagesHandler)
+	mux.HandleFunc("/", indexHandler)
+	mux.HandleFunc("/images", imagesHandler)
 	mux.HandleFunc("/image", imageHandler)
 	mux.HandleFunc("/configaudits", configauditsHandler)
 	mux.HandleFunc("/configaudit", configauditHandler)
@@ -39,8 +41,37 @@ func Start(port string) error {
 	mux.HandleFunc("/exposedsecret", exposedsecretHandler)
 	mux.HandleFunc("/roles", rolesHandler)
 	mux.HandleFunc("/role", roleHandler)
+	// TODO just serve the js and css directories in static
+	// this serves the html templates for no reason
 	mux.Handle("/static/", http.FileServer(http.FS(content.Static)))
 	return http.ListenAndServe(fmt.Sprintf(":%s", port), mux)
+}
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFS(content.Static, "static/index.html", "static/sidebar.html"))
+	if tmpl == nil {
+		log.Logger.Error("encountered error parsing index html template")
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+
+	// Get vulnerability reports
+	data, err := kube.GetVulnerabilityReportList()
+	if err != nil {
+		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
+		return
+	}
+	imageData := imagesview.GetView(data, imagesview.Filters{})
+
+	// Get index view
+	indexData := indexview.GetView(imageData)
+
+	err = tmpl.Execute(w, indexData)
+	if err != nil {
+		log.Logger.Error("encountered error executing index html template", "error", err)
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
 }
 
 func imagesHandler(w http.ResponseWriter, r *http.Request) {

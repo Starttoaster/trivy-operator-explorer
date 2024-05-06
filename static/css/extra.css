@@ -21,3 +21,23 @@
 
 /* Show the dropdown menu on hover */
 .dropdown:hover .dropdown-content {display: block;}
+
+#images-wrapper {
+  display: flex;
+  justify-content: space-between;
+}
+#c1 {
+  width: 45%;
+  display: inline-block;
+  margin: 10px;
+}
+#c2 {
+  width: 20%;
+  display: inline-block;
+  margin: 10px;
+}
+#c3 {
+  width: 20%;
+  display: inline-block;
+  margin: 10px;
+}

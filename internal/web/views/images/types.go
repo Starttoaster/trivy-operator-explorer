@@ -15,6 +15,10 @@ type Data struct {
 	HighVulnerabilities     []Vulnerability
 	MediumVulnerabilities   []Vulnerability
 	LowVulnerabilities      []Vulnerability
+
+	// Data counters for charts in the index page
+	FixAvailableCount   int
+	NoFixAvailableCount int
 }
 
 // ResourceMetadata data related to a k8s resource using a vulnerable image
