@@ -39,7 +39,6 @@
                     data: {
                       labels: ['Critical', 'High', 'Medium', 'Low'],
                       datasets: [{
-                        label: 'Severity',
                         data: [{{ .CriticalVulnerabilities }}, {{ .HighVulnerabilities }}, {{ .MediumVulnerabilities }}, {{ .LowVulnerabilities }}],
                         backgroundColor: [
                             'rgba(255, 0, 0, 1)',
@@ -71,9 +70,8 @@
                 new Chart(document.getElementById('eoslChart'), {
                     type: 'pie',
                     data: {
-                      labels: ['Not EoSL', 'EoSL'],
+                      labels: ['Supported', 'EoSL'],
                       datasets: [{
-                        label: 'End of Service Life images',
                         data: [{{ .NoEOSLCount }}, {{ .EOSLCount }}],
                         backgroundColor: [
                             'rgba(39, 245, 127, 1)',
@@ -100,7 +98,6 @@
                     data: {
                       labels: ['Has fix', 'No fix'],
                       datasets: [{
-                        label: 'Fix Available',
                         data: [{{ .FixAvailableCount }}, {{ .NoFixAvailableCount }}],
                         backgroundColor: [
                             'rgba(39, 245, 127, 1)',
