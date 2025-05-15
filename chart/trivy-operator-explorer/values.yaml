@@ -77,6 +77,8 @@ ingress:
   #  - secretName: chart-example-tls
   #    hosts:
   #      - chart-example.local
+  # Switch between different Ingress rule styles. Can be one of "rules", or "defaultBackend"
+  ruleType: "rules"
 
 resources: 
   # Change these as needed. Larger clusters with more resources may run into issues with too low of limits.
