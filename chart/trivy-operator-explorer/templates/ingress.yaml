@@ -33,9 +33,12 @@ spec:
         {{- range .hosts }}
         - {{ . | quote }}
         {{- end }}
+      {{- if .secretName }}
       secretName: {{ .secretName }}
+      {{- end }}
     {{- end }}
   {{- end }}
+  {{- if eq $.Values.ingress.ruleType "rules" }}
   rules:
     {{- range .Values.ingress.hosts }}
     - host: {{ .host | quote }}
@@ -58,4 +61,11 @@ spec:
               {{- end }}
           {{- end }}
     {{- end }}
+  {{- else if eq $.Values.ingress.ruleType "defaultBackend" }}
+  defaultBackend:
+    service:
+      name: {{ $fullName }}
+      port:
+        number: {{ $svcPort }}
+  {{- end }}
 {{- end }}
