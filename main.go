@@ -23,6 +23,7 @@ import (
 //go:embed static/images.html
 //go:embed static/image.html
 //go:embed static/index.html
+//go:embed static/img/t.ico
 //go:embed static/css/output.css
 //go:embed static/css/extra.css
 //go:embed static/js/chart.js
