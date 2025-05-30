@@ -7,7 +7,7 @@ import (
 	"github.com/starttoaster/trivy-operator-explorer/internal/web/content"
 )
 
-//go:generate tailwindcss build -i ./static/css/input.css -o ./static/css/output.css
+//go:generate tailwindcss -i ./static/css/input.css -o ./static/css/output.css
 
 //go:embed static/sidebar.html
 //go:embed static/configaudits.html
