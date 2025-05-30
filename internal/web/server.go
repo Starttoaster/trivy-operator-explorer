@@ -113,7 +113,16 @@ func imagesHandler(w http.ResponseWriter, r *http.Request) {
 		HasFix: hasFixBool,
 	})
 
-	err = tmpl.Execute(w, imageData)
+	// Add page type to template data
+	templateData := struct {
+		PageRoute string
+		Data      imagesview.View
+	}{
+		PageRoute: "images",
+		Data:      imageData,
+	}
+
+	err = tmpl.Execute(w, templateData)
 	if err != nil {
 		log.Logger.Error("encountered error executing images html template", "error", err)
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
@@ -183,8 +192,17 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Add page type to template data
+	templateData := struct {
+		PageRoute string
+		Data      imageview.View
+	}{
+		PageRoute: "image",
+		Data:      view,
+	}
+
 	// Execute html template
-	err = tmpl.Execute(w, view)
+	err = tmpl.Execute(w, templateData)
 	if err != nil {
 		log.Logger.Error("encountered error executing image html template", "error", err)
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
