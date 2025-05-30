@@ -1,6 +1,19 @@
-function toggleResources(digest) {
-    const resourcesRow = document.getElementById(`resources-${digest}`);
-    const icon = document.getElementById(`icon-${digest}`);
+function sanitizeID(id) {
+    return id.replace(/[^a-zA-Z0-9]/g, '_');
+}
+
+function toggleResources(imageName) {
+    const safeId = sanitizeID(imageName);    
+    const resourcesRow = document.getElementById(`resources-${safeId}`);
+    const icon = document.getElementById(`icon-${safeId}`);
+    
+    if (!resourcesRow || !icon) {
+        console.error('Could not find elements with IDs:', {
+            resourcesId: `resources-${safeId}`,
+            iconId: `icon-${safeId}`
+        });
+        return;
+    }
     
     if (resourcesRow.classList.contains('hidden')) {
         resourcesRow.classList.remove('hidden');

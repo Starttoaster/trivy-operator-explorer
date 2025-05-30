@@ -46,8 +46,8 @@
                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
                         <!-- Image column -->
                         <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                            <button onclick="toggleResources('{{ $data.Digest }}')" class="flex items-center">
-                                <svg class="w-4 h-4 mr-2 transform transition-transform" id="icon-{{ $data.Digest }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <button onclick="toggleResources('{{ $data.Name }}')" class="flex items-center" data-debug-name="{{ $data.Name }}" data-debug-id="icon-{{ $data.Name | sanitizeID }}">
+                                <svg class="w-4 h-4 mr-2 transform transition-transform" id="icon-{{ $data.Name | sanitizeID }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
                                 <a href="/image?image={{ $data.Name }}&digest={{ $data.Digest }}" title="{{ $data.Digest }}">
@@ -85,7 +85,7 @@
                         </td>
                     </tr>
                     <!-- Resources sub-table -->
-                    <tr id="resources-{{ $data.Digest }}" class="hidden bg-gray-50 dark:bg-gray-700">
+                    <tr id="resources-{{ $data.Name | sanitizeID }}" class="hidden bg-gray-50 dark:bg-gray-700" data-debug-id="resources-{{ $data.Name | sanitizeID }}">
                         <td colspan="4" class="px-6 py-4">
                             <div class="overflow-x-auto">
                                 <table class="w-full text-sm text-left text-gray-700 dark:text-gray-200">

@@ -75,7 +75,14 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func imagesHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFS(content.Static, "static/images.html", "static/sidebar.html"))
+	funcMap := template.FuncMap{
+		"sanitizeID": func(s string) string {
+			replacer := strings.NewReplacer("/", "_", ":", "_", " ", "_", "-", "_", ".", "_")
+			return replacer.Replace(s)
+		},
+	}
+
+	tmpl := template.Must(template.New("images.html").Funcs(funcMap).ParseFS(content.Static, "static/images.html", "static/sidebar.html"))
 	if tmpl == nil {
 		log.Logger.Error("encountered error parsing images html template")
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
