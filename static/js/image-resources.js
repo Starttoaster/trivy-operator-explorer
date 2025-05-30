@@ -103,15 +103,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // Set initial selection based on URL parameters
         const url = new URL(window.location.href);
         const resourcesParam = url.searchParams.get('resources');
+        const allCheckbox = document.getElementById('resource-all');
+        
         if (resourcesParam) {
             const selectedResources = resourcesParam.split(',');
             checkboxes.forEach(checkbox => {
                 if (checkbox.id === 'resource-all') {
-                    checkbox.checked = selectedResources.length === 0;
+                    checkbox.checked = false;
                 } else {
                     checkbox.checked = selectedResources.includes(checkbox.value);
                 }
             });
+        } else {
+            // If no resources parameter, hide the "All" option
+            allCheckbox.closest('.flex.items-center').style.display = 'none';
         }
     }
 }); 
