@@ -91,17 +91,17 @@
                                 <table class="w-full text-sm text-left text-gray-700 dark:text-gray-200">
                                     <thead class="text-xs text-gray-700 dark:text-gray-200 uppercase bg-gray-100 dark:bg-gray-600">
                                         <tr>
-                                            <th scope="col" class="px-6 py-3">Kind</th>
                                             <th scope="col" class="px-6 py-3">Namespace</th>
                                             <th scope="col" class="px-6 py-3">Name</th>
+                                            <th scope="col" class="px-6 py-3">Kind</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {{ range $resData, $nada := $data.Resources }}
                                         <tr class="bg-white border-b text-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:border-gray-700">
-                                            <td class="px-6 py-4">{{ $resData.Kind }}</td>
                                             <td class="px-6 py-4">{{ $resData.Namespace }}</td>
                                             <td class="px-6 py-4">{{ $resData.Name }}</td>
+                                            <td class="px-6 py-4">{{ $resData.Kind }}</td>
                                         </tr>
                                         {{ end }}
                                     </tbody>
