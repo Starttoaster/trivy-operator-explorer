@@ -22,9 +22,9 @@
             </div>
 
             <div id="images-wrapper">
-                <div id="c1"><canvas id="vulnChart"></canvas></div>
-                <div id="c2"><canvas id="eoslChart"></canvas></div>
-                <div id="c3"><canvas id="fixedChart"></canvas></div>
+                <div id="c1" style="width: 400px; height: 400px; margin: 0 auto;"><canvas id="vulnChart"></canvas></div>
+                <div id="c2" style="width: 400px; height: 400px; margin: 0 auto;"><canvas id="eoslChart"></canvas></div>
+                <div id="c3" style="width: 400px; height: 400px; margin: 0 auto;"><canvas id="fixedChart"></canvas></div>
             </div>
 
             <script defer>
@@ -35,11 +35,10 @@
                     Chart.defaults.color = '#000';
                 }
                 new Chart(document.getElementById('vulnChart'), {
-                    type: 'bar',
+                    type: 'pie',
                     data: {
                       labels: ['Critical', 'High', 'Medium', 'Low'],
                       datasets: [{
-                        label: 'Number of Vulnerabilities',
                         data: [{{ .CriticalVulnerabilities }}, {{ .HighVulnerabilities }}, {{ .MediumVulnerabilities }}, {{ .LowVulnerabilities }}],
                         backgroundColor: [
                             'rgba(220, 53, 69, 0.8)',  // Critical - Red
@@ -57,7 +56,6 @@
                       }]
                     },
                     options: {
-                        indexAxis: 'y',
                         responsive: true,
                         plugins: {
                             title: {
@@ -68,28 +66,15 @@
                                 }
                             },
                             legend: {
-                                display: false
+                                position: 'bottom'
                             },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
-                                        return `${context.dataset.label}: ${context.raw}`;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = Math.round((context.raw / total) * 100);
+                                        return `${context.label}: ${context.raw} (${percentage}%)`;
                                     }
-                                }
-                            }
-                        },
-                        scales: {
-                            x: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'Number of Vulnerabilities'
-                                }
-                            },
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: 'Severity Level'
                                 }
                             }
                         }
