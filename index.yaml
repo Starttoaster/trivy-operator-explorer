@@ -2,6 +2,16 @@ apiVersion: v1
 entries:
   trivy-operator-explorer:
   - apiVersion: v2
+    appVersion: v0.3.7
+    created: "2025-05-30T06:03:36.944819077Z"
+    description: A Helm chart for Kubernetes
+    digest: 1cc53f62b24e7279d6d5becc01e6710e49d364cc18e3eb7586337cc9ee75d1b4
+    name: trivy-operator-explorer
+    type: application
+    urls:
+    - https://github.com/Starttoaster/trivy-operator-explorer/releases/download/trivy-operator-explorer-0.2.4/trivy-operator-explorer-0.2.4.tgz
+    version: 0.2.4
+  - apiVersion: v2
     appVersion: v0.3.6
     created: "2025-05-15T20:21:07.883388365Z"
     description: A Helm chart for Kubernetes
@@ -151,4 +161,4 @@ entries:
     urls:
     - https://github.com/Starttoaster/trivy-operator-explorer/releases/download/trivy-operator-explorer-0.0.1/trivy-operator-explorer-0.0.1.tgz
     version: 0.0.1
-generated: "2025-05-15T20:21:07.883526372Z"
+generated: "2025-05-30T06:03:36.945008159Z"
