@@ -606,6 +606,10 @@ video {
   margin-inline-end: 0.5rem;
 }
 
+.me-3 {
+  margin-inline-end: 0.75rem;
+}
+
 .ms-3 {
   margin-inline-start: 0.75rem;
 }
