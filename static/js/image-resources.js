@@ -7,73 +7,24 @@ function getUniqueResources() {
     return Array.from(resources).sort();
 }
 
-// Create and populate the resource filter dropdown in the sidebar
-function createResourceFilter() {
+// Toggle the resource filter visibility
+function toggleResourceFilter() {
+    const content = document.getElementById('resourceFilterContent');
+    const icon = document.getElementById('resourceFilterIcon');
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.style.transform = 'rotate(180deg)';
+    } else {
+        content.style.display = 'none';
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+
+// Populate the resource checkboxes
+function populateResourceCheckboxes() {
     const resources = getUniqueResources();
+    const container = document.querySelector('#resourceFilterContent .space-y-2');
     
-    // Create container for the filter
-    const container = document.createElement('div');
-    container.className = 'p-2';
-    
-    // Create header with toggle button
-    const header = document.createElement('div');
-    header.className = 'flex items-center justify-between cursor-pointer';
-    header.onclick = () => {
-        const content = document.getElementById('resourceFilterContent');
-        const icon = document.getElementById('resourceFilterIcon');
-        if (content.style.display === 'none') {
-            content.style.display = 'block';
-            icon.style.transform = 'rotate(180deg)';
-        } else {
-            content.style.display = 'none';
-            icon.style.transform = 'rotate(0deg)';
-        }
-    };
-    
-    // Create header text
-    const headerText = document.createElement('span');
-    headerText.className = 'text-sm font-medium text-gray-900 dark:text-gray-300';
-    headerText.textContent = 'Resource Filter';
-    
-    // Create toggle icon
-    const icon = document.createElement('svg');
-    icon.id = 'resourceFilterIcon';
-    icon.className = 'w-4 h-4 transition-transform';
-    icon.style.transform = 'rotate(0deg)';
-    icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>';
-    
-    header.appendChild(headerText);
-    header.appendChild(icon);
-    container.appendChild(header);
-    
-    // Create content container
-    const content = document.createElement('div');
-    content.id = 'resourceFilterContent';
-    content.className = 'mt-2';
-    content.style.display = 'none';
-    
-    // Create checkbox container
-    const checkboxContainer = document.createElement('div');
-    checkboxContainer.className = 'space-y-2 max-h-48 overflow-y-auto';
-    
-    // Add "All" checkbox
-    const allCheckbox = document.createElement('div');
-    allCheckbox.className = 'flex items-center';
-    const allInput = document.createElement('input');
-    allInput.type = 'checkbox';
-    allInput.id = 'resource-all';
-    allInput.value = 'all';
-    allInput.className = 'w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600';
-    allInput.checked = true;
-    const allLabel = document.createElement('label');
-    allLabel.htmlFor = 'resource-all';
-    allLabel.className = 'ms-2 text-sm font-medium text-gray-900 dark:text-gray-300';
-    allLabel.textContent = 'All Resources';
-    allCheckbox.appendChild(allInput);
-    allCheckbox.appendChild(allLabel);
-    checkboxContainer.appendChild(allCheckbox);
-    
-    // Add resource checkboxes
     resources.forEach(resource => {
         const checkboxDiv = document.createElement('div');
         checkboxDiv.className = 'flex items-center';
@@ -88,34 +39,8 @@ function createResourceFilter() {
         label.textContent = resource;
         checkboxDiv.appendChild(input);
         checkboxDiv.appendChild(label);
-        checkboxContainer.appendChild(checkboxDiv);
+        container.appendChild(checkboxDiv);
     });
-    
-    // Add Apply button
-    const buttonContainer = document.createElement('div');
-    buttonContainer.className = 'mt-4 flex justify-end';
-    const applyButton = document.createElement('button');
-    applyButton.type = 'button';
-    applyButton.className = 'text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800';
-    applyButton.textContent = 'Apply';
-    applyButton.onclick = applyResourceFilter;
-    buttonContainer.appendChild(applyButton);
-    
-    // Add change event listeners
-    const checkboxes = checkboxContainer.querySelectorAll('input[type="checkbox"]');
-    checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', handleCheckboxChange);
-    });
-    
-    content.appendChild(checkboxContainer);
-    content.appendChild(buttonContainer);
-    container.appendChild(content);
-    
-    // Insert after the hasfix toggle
-    const hasfixToggle = document.querySelector('input[type="checkbox"][id="hasFixCheckbox"]').closest('.p-2');
-    if (hasfixToggle) {
-        hasfixToggle.parentNode.insertBefore(container, hasfixToggle.nextSibling);
-    }
 }
 
 // Handle checkbox changes
@@ -164,16 +89,22 @@ function applyResourceFilter() {
 
 // Initialize the resource filter when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    // Only create the filter on the image page
+    // Only initialize on the image page
     if (window.location.pathname === '/image') {
-        createResourceFilter();
+        // Add change event listeners to checkboxes
+        const checkboxes = document.querySelectorAll('#resourceFilterContent input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', handleCheckboxChange);
+        });
+        
+        // Populate resource checkboxes
+        populateResourceCheckboxes();
         
         // Set initial selection based on URL parameters
         const url = new URL(window.location.href);
         const resourcesParam = url.searchParams.get('resources');
         if (resourcesParam) {
             const selectedResources = resourcesParam.split(',');
-            const checkboxes = document.querySelectorAll('#resourceFilterContent input[type="checkbox"]');
             checkboxes.forEach(checkbox => {
                 if (checkbox.id === 'resource-all') {
                     checkbox.checked = selectedResources.length === 0;
