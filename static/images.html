@@ -7,6 +7,7 @@
   <link href="/static/css/extra.css" rel="stylesheet">
   <script src="/static/js/chart.js"></script>
   <script src="/static/js/images-hasfix.js"></script>
+  <script src="/static/js/images-resources-table.js"></script>
 </head>
 <body class="min-h-screen bg-gray-200 dark:bg-indigo-900">
      
@@ -35,9 +36,6 @@
                             Based On
                         </th>
                         <th scope="col" class="px-6 py-3">
-                            Affected Resources
-                        </th>
-                        <th scope="col" class="px-6 py-3">
                             Vulnerabilities
                         </th>
                     </tr>
@@ -48,35 +46,20 @@
                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
                         <!-- Image column -->
                         <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                            <a href="/image?image={{ $data.Name }}&digest={{ $data.Digest }}" title="{{ $data.Digest }}">
-                                {{ $data.Name }}
-                            </a>
+                            <button onclick="toggleResources('{{ $data.Digest }}')" class="flex items-center">
+                                <svg class="w-4 h-4 mr-2 transform transition-transform" id="icon-{{ $data.Digest }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                                <a href="/image?image={{ $data.Name }}&digest={{ $data.Digest }}" title="{{ $data.Digest }}">
+                                    {{ $data.Name }}
+                                </a>
+                            </button>
                         </th>
                         <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                             <a href="/image?image={{ $data.Name }}&digest={{ $data.Digest }}" title="{{ $data.Digest }}">
                                 {{ if .OSFamily }}<span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">{{ .OSFamily }} {{ .OSVersion }}</span>{{ end }} {{ if .OSEndOfServiceLife }}<span class="bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-red-900 dark:text-red-300">EoSL</span>{{ end }}
                             </a>
                         </th>
-                        <!-- Affected Resources column -->
-                        <td class="px-6 py-4">
-                            <div class="dropdown shadow-md relative rounded-lg">
-                                <button id="podDropdownButton" data-dropdown-toggle="dropdown" class="text-black dark:text-white bg-blue-300 dark:bg-blue-800 hover:bg-blue-500 dark:hover:bg-blue-700 dark:focus:ring-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center" type="button">
-                                    {{ len $data.Resources }}
-                                    <svg class="w-2.5 h-2.5 ms-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/>
-                                    </svg>
-                                </button>
-                                <div class="dropdown-content shadow-md relative rounded-lg">
-                                    <ul class="px-1 py-1 rounded-lg text-lg font-medium text-black dark:text-white bg-gray-200 dark:bg-indigo-800 border-gray-700 dark:border-gray-700" aria-labelledby="dropdownDefaultButton">
-                                        {{ range $resData, $nada := $data.Resources }}
-                                        <li>
-                                          <a href="#" class="block hover:bg-gray-300 dark:hover:bg-indigo-900">{{ $resData.Kind }}/{{ $resData.Namespace }}/{{ $resData.Name }}</a>
-                                        </li>
-                                        {{ end }}
-                                    </ul>
-                                </div>
-                            </div>
-                        </td>
                         <!-- Vulnerabilities column -->
                         <td class="px-6 py-4">
                             {{ if $data.CriticalVulnerabilities }}
@@ -99,6 +82,31 @@
                                 {{ len $data.LowVulnerabilities }}
                             </a>
                             {{ end }}
+                        </td>
+                    </tr>
+                    <!-- Resources sub-table -->
+                    <tr id="resources-{{ $data.Digest }}" class="hidden bg-gray-50 dark:bg-gray-700">
+                        <td colspan="4" class="px-6 py-4">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left text-gray-700 dark:text-gray-200">
+                                    <thead class="text-xs text-gray-700 dark:text-gray-200 uppercase bg-gray-100 dark:bg-gray-600">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3">Kind</th>
+                                            <th scope="col" class="px-6 py-3">Namespace</th>
+                                            <th scope="col" class="px-6 py-3">Name</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {{ range $resData, $nada := $data.Resources }}
+                                        <tr class="bg-white border-b text-gray-700 dark:text-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                                            <td class="px-6 py-4">{{ $resData.Kind }}</td>
+                                            <td class="px-6 py-4">{{ $resData.Namespace }}</td>
+                                            <td class="px-6 py-4">{{ $resData.Name }}</td>
+                                        </tr>
+                                        {{ end }}
+                                    </tbody>
+                                </table>
+                            </div>
                         </td>
                     </tr>
                     {{ end }}
