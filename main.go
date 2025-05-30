@@ -23,11 +23,13 @@ import (
 //go:embed static/images.html
 //go:embed static/image.html
 //go:embed static/index.html
+//go:embed static/img/t.ico
 //go:embed static/css/output.css
 //go:embed static/css/extra.css
 //go:embed static/js/chart.js
 //go:embed static/js/images-hasfix.js
 //go:embed static/js/images-resources-table.js
+//go:embed static/js/image-resources.js
 var static embed.FS
 
 func main() {

@@ -42,5 +42,48 @@
                 </a>
             </li>
         </ul>
+
+        {{ if or (eq .PageRoute "image") (eq .PageRoute "images") }}
+        <!-- Divider -->
+        <div class="my-4 border-t border-gray-200 dark:border-gray-700"></div>
+        {{ end }}
+
+        {{ if or (eq .PageRoute "image") (eq .PageRoute "images") }}
+        <!-- Has Fix Toggle -->
+        <div class="p-2">
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-gray-900 dark:text-gray-300">Has fix available</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="hasFixCheckbox" class="sr-only peer" onchange="handleHasFixChange(this)">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                </label>
+            </div>
+        </div>
+        {{ end }}
+
+        {{ if or (eq .PageRoute "image") }}
+        <!-- Resource Filter -->
+        <div class="p-2">
+            <div class="flex items-center justify-between cursor-pointer" onclick="toggleResourceFilter()">
+                <span class="text-sm font-medium text-gray-900 dark:text-gray-300">Resource Filter</span>
+                <svg id="resourceFilterIcon" class="w-4 h-4 transition-transform" style="transform: rotate(0deg)" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </div>
+            <div id="resourceFilterContent" class="mt-2" style="display: none">
+                <div class="space-y-2 max-h-48 overflow-y-auto">
+                    <!-- All Resources checkbox -->
+                    <div class="flex items-center">
+                        <input type="checkbox" id="resource-all" value="all" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" checked>
+                        <label for="resource-all" class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">All Resources</label>
+                    </div>
+                    <!-- Resource checkboxes will be added here by JavaScript -->
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button type="button" onclick="applyResourceFilter()" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Apply</button>
+                </div>
+            </div>
+        </div>
+        {{ end }}
     </div>
 </aside>
