@@ -24,24 +24,9 @@ trivy-operator-explorer \
 trivy-operator-explorer
 ```
 
-## Filters
-
-Some dashboards have filters that can be set from clicking elements on the page, but the following can only be set manually from the URL query parameters for now. UI elements might be added for these over time. 
-
-### Image filter
-
-| Parameters   | Description                                                           | Example                   |
-|--------------|-----------------------------------------------------------------------|---------------------------|
-| hasfix       | Boolean to only view vulnerabilities that have a fix version, or not. | hasfix=true, hasfix=false |
-| resources    | Comma-separated list of resources to view vulnerabilities for.        | resources=curl,zlib1g     |
-| notresources | Comma-separated list of resources to ignore vulnerabilities for.      | notresources=curl,zlib1g  |
-
-Example URL: `http://your.explorer.install/image?hasfix=true&resources=curl,zlib1g`
-
 ## TODO
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) if you'd like to contribute an item on this list. Please make an Issue if you would like to see something added to this list.
 
-- Dashboard for CIS/NSA/PSS compliance results, maybe made the home page, and move the images view to /images
+- CIS/NSA/PSS compliance results dashboard
 - SBOM dashboard
-- Graphical elements for setting the filters on the /image page
