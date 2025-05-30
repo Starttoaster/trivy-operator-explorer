@@ -2,7 +2,9 @@
 
 ## Local dev
 
-Making changes to the HTML may require [TailwindCSS](https://tailwindcss.com/blog/standalone-cli) to be installed. Assuming the standalone TailwindCSS utility is installed, you can build and run this project locally with:
+Making changes to the HTML may require [TailwindCSS](https://tailwindcss.com/blog/standalone-cli) to be installed. Specifically this project uses TailwindCSS v3, and the CLI for that can be found [in their release page](https://github.com/tailwindlabs/tailwindcss/releases/tag/v3.4.17).
+
+Assuming the standalone TailwindCSS utility is installed, you can build and run this project locally with:
 
 ```bash
 go generate && \
