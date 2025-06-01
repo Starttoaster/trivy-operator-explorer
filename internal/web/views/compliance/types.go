@@ -15,6 +15,12 @@ type Data struct {
 type Summary struct {
 	FailCount int
 	PassCount int
+
+	CriticalFailCount int
+	HighFailCount     int
+	MediumFailCount   int
+	LowFailCount      int
+	UnknownFailCount  int
 }
 
 // Check data related to a compliance report check

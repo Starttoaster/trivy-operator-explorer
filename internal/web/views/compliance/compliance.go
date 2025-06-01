@@ -10,6 +10,13 @@ func GetView(data *v1alpha1.ClusterComplianceReportList) View {
 	var r View
 
 	for _, item := range data.Items {
+		// Create severity fail counters
+		var criticalFailCount int
+		var highFailCount int
+		var mediumFailCount int
+		var lowFailCount int
+		var unknownFailCount int
+
 		// Create map of map[id]Check
 		checksMap := make(map[string]Check)
 
@@ -37,7 +44,22 @@ func GetView(data *v1alpha1.ClusterComplianceReportList) View {
 					fmt.Println("check not found skipping")
 					continue
 				}
-				check.TotalFailed = statusCheck.TotalFail
+
+				if statusCheck.TotalFail != nil {
+					check.TotalFailed = statusCheck.TotalFail
+					switch statusCheck.Severity {
+					case "CRITICAL":
+						criticalFailCount += *statusCheck.TotalFail
+					case "HIGH":
+						highFailCount += *statusCheck.TotalFail
+					case "MEDIUM":
+						mediumFailCount += *statusCheck.TotalFail
+					case "LOW":
+						lowFailCount += *statusCheck.TotalFail
+					default:
+						unknownFailCount += *statusCheck.TotalFail
+					}
+				}
 			}
 		}
 
@@ -53,8 +75,13 @@ func GetView(data *v1alpha1.ClusterComplianceReportList) View {
 			ID:    item.Spec.Compliance.ID,
 			Title: item.Spec.Compliance.Title,
 			Summary: Summary{
-				FailCount: item.Status.Summary.FailCount,
-				PassCount: item.Status.Summary.PassCount,
+				FailCount:         item.Status.Summary.FailCount,
+				PassCount:         item.Status.Summary.PassCount,
+				CriticalFailCount: criticalFailCount,
+				HighFailCount:     highFailCount,
+				MediumFailCount:   mediumFailCount,
+				LowFailCount:      lowFailCount,
+				UnknownFailCount:  unknownFailCount,
 			},
 			Checks: checks,
 		})

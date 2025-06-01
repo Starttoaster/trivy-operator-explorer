@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>Explorer: Compliance Reports</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="/static/img/t.ico">
+<link href="/static/css/output.css" rel="stylesheet">
+<link href="/static/css/extra.css" rel="stylesheet">
+</head>
+<body class="min-h-screen bg-gray-200 dark:bg-indigo-900">
+
+<!-- Sidebar -->
+{{template "sidebar.html"}}
+
+<!-- Table content -->
+<div class="p-4 sm:ml-64 bg-gray-200 dark:bg-indigo-900">
+    <div class="relative overflow-x-auto shadow-md rounded-lg">
+        <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+            <!-- Table headers -->
+            <thead class="rounded-lg text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            <tr>
+                <th scope="col" class="px-6 py-3">
+                    Name
+                </th>
+                <th scope="col" class="px-6 py-3">
+                    Checks
+                </th>
+            </tr>
+            </thead>
+            <!-- Table body -->
+            <tbody>
+            {{ range $data := . }}
+            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
+                <!-- Roles column -->
+                <td scope="row" class="px-6 py-4 font-medium text-black whitespace-nowrap dark:text-white">
+                    <a href="/compliancereport?id={{ $data.ID }}">
+                        {{ $data.Title }}
+                    </a>
+                </td>
+                <!-- Checks column -->
+                <td class="px-6 py-4">
+                    {{ if $data.Summary.CriticalFailCount }}
+                    <a href="/compliancereport?id={{ $data.ID }}&severity=Critical" title="Critical" class="bg-red-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-red-900 dark:text-red-100">
+                        {{ $data.Summary.CriticalFailCount }}
+                    </a>
+                    {{ end }}
+                    {{ if $data.Summary.HighFailCount }}
+                    <a href="/compliancereport?id={{ $data.ID }}&severity=High" title="High" class="bg-orange-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-orange-900 dark:text-orange-100">
+                        {{ $data.Summary.HighFailCount }}
+                    </a>
+                    {{ end }}
+                    {{ if $data.Summary.MediumFailCount }}
+                    <a href="/compliancereport?id={{ $data.ID }}&severity=Medium" title="Medium" class="bg-yellow-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-yellow-900 dark:text-yellow-100">
+                        {{ $data.Summary.MediumFailCount }}
+                    </a>
+                    {{ end }}
+                    {{ if $data.Summary.LowFailCount }}
+                    <a href="/compliancereport?id={{ $data.ID }}&severity=Low" title="Low" class="bg-blue-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-blue-900 dark:text-blue-100">
+                        {{ $data.Summary.LowFailCount }}
+                    </a>
+                    {{ end }}
+                </td>
+            </tr>
+            {{ end }}
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>
