@@ -47,11 +47,13 @@
             {{ range $data := .Checks }}
             <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
                 <th scope="row" class="px-6 py-4 font-medium text-black whitespace-nowrap dark:text-white">
+                    <div class="flex flex-col gap-1">
                     {{ range $id := $data.ID }}
                     <a href="{{ $id.URL }}" >
                         <span class="ms-3">{{ $id.ID }}</span>
                     </a>
                     {{ end }}
+                    </div>
                 </th>
                 <td class="px-6 py-4 text-black dark:text-white">
                     {{if eq $data.Severity "CRITICAL"}}
