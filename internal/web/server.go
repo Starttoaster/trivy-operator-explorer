@@ -14,6 +14,7 @@ import (
 	clusterauditsview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusteraudits"
 	clusterroleview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusterrole"
 	clusterrolesview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusterroles"
+	complianceview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/compliance"
 	configauditview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/configaudit"
 	configauditsview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/configaudits"
 	exposedsecretview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/exposedsecret"
@@ -41,6 +42,8 @@ func Start(port string) error {
 	mux.HandleFunc("/exposedsecret", exposedsecretHandler)
 	mux.HandleFunc("/roles", rolesHandler)
 	mux.HandleFunc("/role", roleHandler)
+	mux.HandleFunc("/compliancereports", complianceReportsHandler)
+	mux.HandleFunc("/compliancereport", complianceReportHandler)
 	// TODO just serve the js and css directories in static
 	// this serves the html templates for no reason
 	mux.Handle("/static/", http.FileServer(http.FS(content.Static)))
@@ -56,15 +59,23 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get vulnerability reports
-	data, err := kube.GetVulnerabilityReportList()
+	vulnerabilityData, err := kube.GetVulnerabilityReportList()
 	if err != nil {
 		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		return
 	}
-	imageData := imagesview.GetView(data, imagesview.Filters{})
+	imagesView := imagesview.GetView(vulnerabilityData, imagesview.Filters{})
+
+	// Get compliance reports
+	complianceData, err := kube.GetComplianceReportList()
+	if err != nil {
+		log.Logger.Error("error getting ComplianceReports", "error", err.Error())
+		return
+	}
+	complianceView := complianceview.GetView(complianceData)
 
 	// Get index view
-	indexData := indexview.GetView(imageData)
+	indexData := indexview.GetView(imagesView, complianceView)
 
 	err = tmpl.Execute(w, indexData)
 	if err != nil {
@@ -608,6 +619,70 @@ func exposedsecretHandler(w http.ResponseWriter, r *http.Request) {
 	err = tmpl.Execute(w, view)
 	if err != nil {
 		log.Logger.Error("encountered error executing exposed secret html template", "error", err)
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+}
+
+func complianceReportsHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFS(content.Static, "static/compliancereports.html", "static/sidebar.html"))
+	if tmpl == nil {
+		log.Logger.Error("encountered error parsing compliance reports html template")
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+
+	// Get compliance reports
+	complianceData, err := kube.GetComplianceReportList()
+	if err != nil {
+		log.Logger.Error("error getting ComplianceReports", "error", err.Error())
+		return
+	}
+	complianceView := complianceview.GetView(complianceData)
+
+	err = tmpl.Execute(w, complianceView)
+	if err != nil {
+		log.Logger.Error("encountered error executing compliance reports html template", "error", err)
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+}
+
+func complianceReportHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFS(content.Static, "static/compliancereport.html", "static/sidebar.html"))
+	if tmpl == nil {
+		log.Logger.Error("encountered error parsing compliance report html template")
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+
+	// Parse URL query params
+	q := r.URL.Query()
+
+	// Check query params -- 404 if required params not passed
+	id := q.Get("id")
+	if id == "" {
+		log.Logger.Error("report id query param missing from request")
+		http.NotFound(w, r)
+		return
+	}
+	var severity *string
+	if q.Get("severity") != "" {
+		s := q.Get("severity")
+		severity = &s
+	}
+
+	// Get compliance reports
+	complianceData, err := kube.GetComplianceReportList()
+	if err != nil {
+		log.Logger.Error("error getting ComplianceReports", "error", err.Error())
+		return
+	}
+	complianceView := complianceview.GetSingleReportData(complianceData, id, severity)
+
+	err = tmpl.Execute(w, complianceView)
+	if err != nil {
+		log.Logger.Error("encountered error executing compliance report html template", "error", err)
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
 		return
 	}

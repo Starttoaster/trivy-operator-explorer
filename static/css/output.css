@@ -705,6 +705,10 @@ video {
   height: 1.5rem;
 }
 
+.h-\[300px\] {
+  height: 300px;
+}
+
 .h-full {
   height: 100%;
 }
@@ -739,6 +743,10 @@ video {
 
 .w-64 {
   width: 16rem;
+}
+
+.w-\[300px\] {
+  width: 300px;
 }
 
 .w-full {
@@ -798,6 +806,14 @@ video {
 
 .justify-between {
   justify-content: space-between;
+}
+
+.gap-1 {
+  gap: 0.25rem;
+}
+
+.gap-10 {
+  gap: 2.5rem;
 }
 
 .space-y-2 > :not([hidden]) ~ :not([hidden]) {

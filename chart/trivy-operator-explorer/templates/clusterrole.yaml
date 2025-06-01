@@ -19,9 +19,9 @@ rules:
       - infraassessmentreports
       - clusterinfraassessmentreports
       - exposedsecretreports
+      - clustercompliancereports
       #- sbomreports
       #- clustervulnerabilityreports
       #- clustersbomreports
       #- clusterconfigauditreports
-      #- clustercompliancereports
       #- clustercompliancedetailreports
