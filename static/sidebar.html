@@ -64,8 +64,8 @@
         {{ if or (eq .PageRoute "image") }}
         <!-- Resource Filter -->
         <div class="p-2">
-            <div class="flex items-center justify-between cursor-pointer" onclick="toggleResourceFilter()">
-                <span class="text-sm font-medium text-gray-900 dark:text-gray-300">Resource Filter</span>
+            <div class="flex items-center justify-between cursor-pointer font-medium text-gray-900 dark:text-gray-300" onclick="toggleResourceFilter()">
+                <span class="text-sm">Resource Filter</span>
                 <svg id="resourceFilterIcon" class="w-4 h-4 transition-transform" style="transform: rotate(0deg)" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
@@ -75,12 +75,12 @@
                     <!-- All Resources checkbox -->
                     <div class="flex items-center">
                         <input type="checkbox" id="resource-all" value="all" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" checked>
-                        <label for="resource-all" class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">All Resources</label>
+                        <label for="resource-all" class="ms-2 text-sm">All Resources</label>
                     </div>
                     <!-- Resource checkboxes will be added here by JavaScript -->
                 </div>
                 <div class="mt-4 flex justify-end">
-                    <button type="button" onclick="applyResourceFilter()" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Apply</button>
+                    <button type="button" onclick="applyResourceFilter()" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Apply</button>
                 </div>
             </div>
         </div>
