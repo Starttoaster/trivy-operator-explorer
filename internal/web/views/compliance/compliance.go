@@ -1,6 +1,7 @@
 package compliance
 
 import (
+	"fmt"
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
 )
 
@@ -30,14 +31,12 @@ func GetView(data *v1alpha1.ClusterComplianceReportList) View {
 
 		// Loop through status of report updating items in the map using the id number of the check as the key
 		if item.Status.SummaryReport != nil {
-			continue
-		}
-		for _, statusCheck := range item.Status.SummaryReport.SummaryControls {
-			check, ok := checksMap[statusCheck.ID]
-			if !ok {
-				continue
-			}
-			if statusCheck.TotalFail != nil {
+			for _, statusCheck := range item.Status.SummaryReport.SummaryControls {
+				check, ok := checksMap[statusCheck.ID]
+				if !ok {
+					fmt.Println("check not found skipping")
+					continue
+				}
 				check.TotalFailed = statusCheck.TotalFail
 			}
 		}

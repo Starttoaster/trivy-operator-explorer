@@ -9,6 +9,7 @@ import (
 func GetView(vulnList imagesview.View, complianceList complianceview.View) View {
 	var i View
 
+	// Process image vulnerability data
 	for _, image := range vulnList {
 		i.CriticalVulnerabilities += len(image.CriticalVulnerabilities)
 		i.HighVulnerabilities += len(image.HighVulnerabilities)
@@ -24,6 +25,9 @@ func GetView(vulnList imagesview.View, complianceList complianceview.View) View 
 			i.NoEOSLCount++
 		}
 	}
+
+	// Process compliance data
+	i.ComplianceReports = complianceList
 
 	return i
 }
