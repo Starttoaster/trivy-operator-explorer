@@ -39,14 +39,16 @@
                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
                         <!-- Image column -->
                         <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                            <button onclick="toggleResources('{{ $data.Name }}')" class="flex items-center" data-debug-name="{{ $data.Name }}" data-debug-id="icon-{{ $data.Name | sanitizeID }}">
-                                <svg class="w-4 h-4 mr-2 transform transition-transform" id="icon-{{ $data.Name | sanitizeID }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                </svg>
+                            <div class="flex items-center">
+                                <button onclick="toggleResources('{{ $data.Name }}')" class="flex items-center" data-debug-name="{{ $data.Name }}" data-debug-id="icon-{{ $data.Name | sanitizeID }}">
+                                    <svg class="w-4 h-4 mr-2 transform transition-transform" id="icon-{{ $data.Name | sanitizeID }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
                                 <a href="/image?image={{ $data.Name }}&digest={{ $data.Digest }}" title="{{ $data.Digest }}">
                                     {{ $data.Name }}
                                 </a>
-                            </button>
+                            </div>
                         </th>
                         <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                             <a href="/image?image={{ $data.Name }}&digest={{ $data.Digest }}" title="{{ $data.Digest }}">
