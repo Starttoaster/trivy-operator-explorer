@@ -28,5 +28,4 @@ trivy-operator-explorer
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) if you'd like to contribute an item on this list. Please make an Issue if you would like to see something added to this list.
 
-- CIS/NSA/PSS compliance results dashboard
 - SBOM dashboard
