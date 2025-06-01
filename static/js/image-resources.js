@@ -27,7 +27,7 @@ function populateResourceCheckboxes() {
     
     resources.forEach(resource => {
         const checkboxDiv = document.createElement('div');
-        checkboxDiv.className = 'flex items-center';
+        checkboxDiv.className = 'flex items-center min-w-max';
         const input = document.createElement('input');
         input.type = 'checkbox';
         input.id = `resource-${resource}`;
