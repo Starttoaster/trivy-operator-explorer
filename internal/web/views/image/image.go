@@ -14,10 +14,9 @@ type Filters struct {
 	Digest string
 
 	// optional filters
-	Severity     string
-	HasFix       bool
-	Resources    []string
-	NotResources []string
+	Severity  string
+	HasFix    bool
+	Resources []string
 }
 
 // GetView converts some report data to the /image view
@@ -82,20 +81,6 @@ func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters) (View, boo
 						}
 					}
 					if !add {
-						continue
-					}
-				}
-
-				// Filter by not-resource
-				if len(filters.NotResources) != 0 && filters.NotResources[0] != "" {
-					var skip bool
-					for _, notRes := range filters.NotResources {
-						if vuln.Resource == notRes {
-							skip = true
-							break
-						}
-					}
-					if skip {
 						continue
 					}
 				}

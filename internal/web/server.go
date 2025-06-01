@@ -156,7 +156,6 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	severity := q.Get("severity")
 	resources := q.Get("resources")
-	notResources := q.Get("notresources")
 
 	hasFix := q.Get("hasfix")
 	var hasFixBool bool
@@ -177,12 +176,11 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Get image view from reports
 	view, found := imageview.GetView(reports, imageview.Filters{
-		Name:         imageName,
-		Digest:       imageDigest,
-		Severity:     severity,
-		HasFix:       hasFixBool,
-		Resources:    strings.Split(resources, ","),
-		NotResources: strings.Split(notResources, ","),
+		Name:      imageName,
+		Digest:    imageDigest,
+		Severity:  severity,
+		HasFix:    hasFixBool,
+		Resources: strings.Split(resources, ","),
 	})
 
 	// If the selected image from query params was not found, 404
