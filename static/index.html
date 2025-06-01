@@ -195,7 +195,7 @@
                 </a>
             </div>
 
-            <div id="compliance-wrapper" class="flex flex-wrap justify-center gap-10">
+            <div id="compliance-wrapper" class="flex flex-wrap justify-between gap-10">
                 {{ range $report := .ComplianceReports }}
                 <div class="w-[300px] h-[300px]"><canvas id="compliance-chart-{{ $report.ID }}"></canvas></div>
                 {{ end }}
