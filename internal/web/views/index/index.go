@@ -1,11 +1,12 @@
 package index
 
 import (
+	complianceview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/compliance"
 	imagesview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/images"
 )
 
 // GetView converts some report data to the / view
-func GetView(vulnList imagesview.View) View {
+func GetView(vulnList imagesview.View, complianceList complianceview.View) View {
 	var i View
 
 	for _, image := range vulnList {

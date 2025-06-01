@@ -14,6 +14,7 @@ import (
 	clusterauditsview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusteraudits"
 	clusterroleview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusterrole"
 	clusterrolesview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusterroles"
+	complianceview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/compliance"
 	configauditview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/configaudit"
 	configauditsview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/configaudits"
 	exposedsecretview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/exposedsecret"
@@ -56,15 +57,23 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get vulnerability reports
-	data, err := kube.GetVulnerabilityReportList()
+	vulnerabilityData, err := kube.GetVulnerabilityReportList()
 	if err != nil {
 		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		return
 	}
-	imageData := imagesview.GetView(data, imagesview.Filters{})
+	imagesView := imagesview.GetView(vulnerabilityData, imagesview.Filters{})
+
+	// Get compliance reports
+	complianceData, err := kube.GetComplianceReportList()
+	if err != nil {
+		log.Logger.Error("error getting ComplianceReports", "error", err.Error())
+		return
+	}
+	complianceView := complianceview.GetView(complianceData)
 
 	// Get index view
-	indexData := indexview.GetView(imageData)
+	indexData := indexview.GetView(imagesView, complianceView)
 
 	err = tmpl.Execute(w, indexData)
 	if err != nil {
