@@ -23,6 +23,7 @@ import (
 //go:embed static/images.html
 //go:embed static/image.html
 //go:embed static/compliancereports.html
+//go:embed static/compliancereport.html
 //go:embed static/index.html
 //go:embed static/img/t.ico
 //go:embed static/css/output.css

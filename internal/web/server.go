@@ -43,6 +43,7 @@ func Start(port string) error {
 	mux.HandleFunc("/roles", rolesHandler)
 	mux.HandleFunc("/role", roleHandler)
 	mux.HandleFunc("/compliancereports", complianceReportsHandler)
+	mux.HandleFunc("/compliancereport", complianceReportHandler)
 	// TODO just serve the js and css directories in static
 	// this serves the html templates for no reason
 	mux.Handle("/static/", http.FileServer(http.FS(content.Static)))
@@ -642,6 +643,46 @@ func complianceReportsHandler(w http.ResponseWriter, r *http.Request) {
 	err = tmpl.Execute(w, complianceView)
 	if err != nil {
 		log.Logger.Error("encountered error executing compliance reports html template", "error", err)
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+}
+
+func complianceReportHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFS(content.Static, "static/compliancereport.html", "static/sidebar.html"))
+	if tmpl == nil {
+		log.Logger.Error("encountered error parsing compliance report html template")
+		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
+		return
+	}
+
+	// Parse URL query params
+	q := r.URL.Query()
+
+	// Check query params -- 404 if required params not passed
+	id := q.Get("id")
+	if id == "" {
+		log.Logger.Error("report id query param missing from request")
+		http.NotFound(w, r)
+		return
+	}
+	var severity *string
+	if q.Get("severity") != "" {
+		s := q.Get("severity")
+		severity = &s
+	}
+
+	// Get compliance reports
+	complianceData, err := kube.GetComplianceReportList()
+	if err != nil {
+		log.Logger.Error("error getting ComplianceReports", "error", err.Error())
+		return
+	}
+	complianceView := complianceview.GetSingleReportData(complianceData, id, severity)
+
+	err = tmpl.Execute(w, complianceView)
+	if err != nil {
+		log.Logger.Error("encountered error executing compliance report html template", "error", err)
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
 		return
 	}

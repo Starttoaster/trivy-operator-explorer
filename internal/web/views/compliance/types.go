@@ -26,9 +26,15 @@ type Summary struct {
 // Check data related to a compliance report check
 type Check struct {
 	IDNumber    string
-	ID          []string
+	ID          []CheckID
 	Name        string
 	Description string
 	Severity    string
 	TotalFailed *int
+}
+
+// CheckID represents an ID/URL pair of data for a check
+type CheckID struct {
+	ID  string
+	URL string
 }

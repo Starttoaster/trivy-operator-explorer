@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<title>{{ .Title }}</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="/static/img/t.ico">
+<link href="/static/css/output.css" rel="stylesheet">
+</head>
+<body class="min-h-screen bg-gray-200 dark:bg-indigo-900">
+
+<!-- Sidebar -->
+{{template "sidebar.html"}}
+
+<!-- Report name top bar -->
+<nav class="sm:ml-64 bg-white border-gray-200 dark:bg-gray-900">
+    <div class="max-w-screen-xl flex flex-wrap justify-between p-4">
+        <div class="hidden w-full md:block md:w-auto" id="navbar-default">
+            <span class="block py-2 px-3 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 dark:text-white md:dark:text-blue-200" aria-current="page">{{ .Title }}</span>
+        </div>
+    </div>
+</nav>
+
+<!-- Table content -->
+<div class="p-4 sm:ml-64 bg-gray-200 dark:bg-indigo-900">
+    <div class="relative overflow-x-auto shadow-md rounded-lg">
+        <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+            <thead class="rounded-lg text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+            <tr>
+                <th scope="col" class="px-6 py-3">
+                    Check
+                </th>
+                <th scope="col" class="px-6 py-3">
+                    Severity
+                </th>
+                <th scope="col" class="px-6 py-3">
+                    Total Failed
+                </th>
+                <th scope="col" class="px-6 py-3">
+                    Name
+                </th>
+                <th scope="col" class="px-6 py-3">
+                    Description
+                </th>
+            </tr>
+            </thead>
+            <tbody>
+            {{ range $data := .Checks }}
+            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
+                <th scope="row" class="px-6 py-4 font-medium text-black whitespace-nowrap dark:text-white">
+                    {{ range $id := $data.ID }}
+                    <a href="{{ $id.URL }}" >
+                        <span class="ms-3">{{ $id.ID }}</span>
+                    </a>
+                    {{ end }}
+                </th>
+                <td class="px-6 py-4 text-black dark:text-white">
+                    {{if eq $data.Severity "CRITICAL"}}
+                    <span class="bg-red-200 text-black text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-100">{{ $data.Severity }}</span>
+                    {{else if eq $data.Severity "HIGH"}}
+                    <span class="bg-orange-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-orange-900 dark:text-orange-100">{{ $data.Severity }}</span>
+                    {{else if eq $data.Severity "MEDIUM"}}
+                    <span class="bg-yellow-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-yellow-900 dark:text-yellow-100">{{ $data.Severity }}</span>
+                    {{else if eq $data.Severity "LOW"}}
+                    <span class="bg-blue-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-blue-900 dark:text-blue-100">{{ $data.Severity }}</span>
+                    {{end}}
+                </td>
+                <td class="px-6 py-4 text-black dark:text-white">
+                    {{ $data.TotalFailed }}
+                </td>
+                <td class="px-6 py-4 text-black dark:text-white">
+                    {{ $data.Name }}
+                </td>
+                <td class="px-6 py-4 text-black dark:text-white">
+                    {{ $data.Description }}
+                </td>
+            </tr>
+            {{ end }}
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>
