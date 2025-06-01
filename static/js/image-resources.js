@@ -32,10 +32,10 @@ function populateResourceCheckboxes() {
         input.type = 'checkbox';
         input.id = `resource-${resource}`;
         input.value = resource;
-        input.className = 'w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600';
+        input.className = 'w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 shrink-0';
         const label = document.createElement('label');
         label.htmlFor = `resource-${resource}`;
-        label.className = 'ms-2 text-sm font-medium text-gray-900 dark:text-gray-300';
+        label.className = 'ms-2 text-sm font-medium text-gray-900 dark:text-gray-300 truncate';
         label.textContent = resource;
         checkboxDiv.appendChild(input);
         checkboxDiv.appendChild(label);
