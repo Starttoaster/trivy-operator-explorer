@@ -12,13 +12,18 @@ function selectAllResources() {
     const checkboxes = document.querySelectorAll('#resourceFilterContent input[type="checkbox"]');
     const allCheckbox = document.getElementById('resource-all');
     
+    // Check if all checkboxes are currently checked
+    const allChecked = Array.from(checkboxes).every(checkbox => 
+        checkbox.id === 'resource-all' || checkbox.checked
+    );
+    
     // Uncheck the "All" checkbox
     allCheckbox.checked = false;
     
-    // Check all other checkboxes
+    // Toggle all other checkboxes based on current state
     checkboxes.forEach(checkbox => {
         if (checkbox.id !== 'resource-all') {
-            checkbox.checked = true;
+            checkbox.checked = !allChecked;
         }
     });
 }
