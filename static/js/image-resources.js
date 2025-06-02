@@ -7,6 +7,22 @@ function getUniqueResources() {
     return Array.from(resources).sort();
 }
 
+// Select all resource checkboxes
+function selectAllResources() {
+    const checkboxes = document.querySelectorAll('#resourceFilterContent input[type="checkbox"]');
+    const allCheckbox = document.getElementById('resource-all');
+    
+    // Uncheck the "All" checkbox
+    allCheckbox.checked = false;
+    
+    // Check all other checkboxes
+    checkboxes.forEach(checkbox => {
+        if (checkbox.id !== 'resource-all') {
+            checkbox.checked = true;
+        }
+    });
+}
+
 // Toggle the resource filter visibility
 function toggleResourceFilter() {
     const content = document.getElementById('resourceFilterContent');
@@ -117,6 +133,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             // If no resources parameter, hide the "All" option
             allCheckbox.closest('.flex.items-center').style.display = 'none';
+        }
+
+        // Ensure the Select All button is visible
+        const selectAllButton = document.querySelector('#resourceFilterContent button[onclick="selectAllResources()"]');
+        if (selectAllButton) {
+            selectAllButton.style.display = 'block';
         }
     }
 }); 
