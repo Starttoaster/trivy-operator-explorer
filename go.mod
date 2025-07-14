@@ -3,7 +3,7 @@ module github.com/starttoaster/trivy-operator-explorer
 go 1.24.4
 
 require (
-	github.com/aquasecurity/trivy-operator v0.27.1
+	github.com/aquasecurity/trivy-operator v0.27.3
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 	k8s.io/client-go v0.33.2
@@ -25,7 +25,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.8.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
-	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/go-containerregistry v0.20.5 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -46,7 +46,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sagikazarmark/locafero v0.9.0 // indirect
-	github.com/samber/lo v1.50.0 // indirect
+	github.com/samber/lo v1.51.0 // indirect
 	github.com/samber/oops v1.18.1 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.14.0 // indirect
@@ -61,11 +61,11 @@ require (
 	go.opentelemetry.io/otel v1.36.0 // indirect
 	go.opentelemetry.io/otel/trace v1.36.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.40.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/term v0.32.0 // indirect
-	golang.org/x/text v0.25.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
