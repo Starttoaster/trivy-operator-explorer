@@ -8,7 +8,8 @@ import (
 	"strings"
 )
 
-var db *sqlx.DB
+// Client is the sqlx database client
+var Client *sqlx.DB
 
 func Init(path string) error {
 	dbPathNoTrailingSlash := strings.TrimSuffix(path, "/")
@@ -16,7 +17,7 @@ func Init(path string) error {
 	if err != nil {
 		return err
 	}
-	db = dbClient
+	Client = dbClient
 
 	err = initImagesTable()
 	if err != nil {
@@ -37,13 +38,13 @@ func Init(path string) error {
 }
 
 func initImagesTable() error {
-	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS images (
+	_, err := Client.Exec(`CREATE TABLE IF NOT EXISTS images (
 		id INTEGER PRIMARY KEY,
 		registry TEXT NOT NULL,
 		repository TEXT NOT NULL,
 		tag TEXT NOT NULL,
 		sha TEXT NOT NULL,
-		os TEXT NOT NULL,
+		os TEXT,
 		eosl BOOLEAN
 	);`)
 	if err != nil {
@@ -55,7 +56,7 @@ func initImagesTable() error {
 }
 
 func initImagesResourcesTable() error {
-	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS images_resources (
+	_, err := Client.Exec(`CREATE TABLE IF NOT EXISTS images_resources (
 		id INTEGER PRIMARY KEY,
 		name TEXT NOT NULL,
 		namespace TEXT NOT NULL,
@@ -70,7 +71,7 @@ func initImagesResourcesTable() error {
 }
 
 func initImageResourceJunctionTable() error {
-	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS images_resources_relations (
+	_, err := Client.Exec(`CREATE TABLE IF NOT EXISTS images_resources_relations (
         id INTEGER PRIMARY KEY,
         image_id INTEGER NOT NULL,
         resource_id INTEGER NOT NULL,
