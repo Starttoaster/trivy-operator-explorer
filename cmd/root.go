@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/starttoaster/trivy-operator-explorer/internal/db"
+	"github.com/starttoaster/trivy-operator-explorer/internal/sync"
 	"os"
 	"strings"
 
@@ -36,6 +37,8 @@ var rootCmd = &cobra.Command{
 				log.Fatal("error initing external kube client", "error", err.Error())
 			}
 		}
+
+		go sync.VulnerabilityReports()
 
 		if viper.GetString("server-port") == "" {
 			log.Fatal("server port flag not set. Should be 8080 by default. This likely means it was overridden by user input with no value.")

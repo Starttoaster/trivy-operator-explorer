@@ -2,10 +2,11 @@ package db
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
-	"strings"
 )
 
 // Client is the sqlx database client
@@ -45,7 +46,8 @@ func initImagesTable() error {
 		tag TEXT NOT NULL,
 		sha TEXT NOT NULL,
 		os TEXT,
-		eosl BOOLEAN
+		eosl BOOLEAN,
+		UNIQUE(registry, repository, tag, sha)
 	);`)
 	if err != nil {
 		return err
@@ -60,7 +62,8 @@ func initImagesResourcesTable() error {
 		id INTEGER PRIMARY KEY,
 		name TEXT NOT NULL,
 		namespace TEXT NOT NULL,
-		kind TEXT NOT NULL
+		kind TEXT NOT NULL,
+		UNIQUE(name, namespace, kind)
 	);`)
 	if err != nil {
 		return err
