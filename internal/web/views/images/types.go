@@ -19,6 +19,8 @@ type Data struct {
 	// Data counters for charts in the index page
 	FixAvailableCount   int
 	NoFixAvailableCount int
+
+	Unscanned bool
 }
 
 // ResourceMetadata data related to a k8s resource using a vulnerable image

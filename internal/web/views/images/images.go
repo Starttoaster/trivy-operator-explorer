@@ -2,6 +2,7 @@ package images
 
 import (
 	"fmt"
+	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
 	"sort"
 	"strings"
 
@@ -14,13 +15,14 @@ type Filters struct {
 }
 
 // GetView converts some report data to the /images view
-func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters) View {
+func GetView(data *v1alpha1.VulnerabilityReportList, imagesMap map[string]kube.ContainerImage, filters Filters) View {
 	var i View
 
 	for _, item := range data.Items {
 		// Construct image data from this VulnerabilityReport
+		imageName := getImageNameFromReport(item.Report.Registry.Server, item.Report.Artifact.Repository)
 		image := Data{
-			Name:      getImageNameFromLabels(item.Report.Registry.Server, item.Report.Artifact.Repository, item.Report.Artifact.Tag),
+			Name:      fmt.Sprintf("%s:%s", imageName, item.Report.Artifact.Tag),
 			Digest:    item.Report.Artifact.Digest,
 			OSFamily:  string(item.Report.OS.Family),
 			OSVersion: item.Report.OS.Name,
@@ -85,6 +87,19 @@ func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters) View {
 					i[imageIndex].NoFixAvailableCount++
 				}
 				i[imageIndex].addVulnerabilityData(vuln)
+			}
+		}
+	}
+
+	if imagesMap != nil {
+		for _, image := range i {
+			imageNameAndTag := strings.Split(image.Name, ":")
+			imagesMapKey := fmt.Sprintf("%s|%s", imageNameAndTag[0], imageNameAndTag[1])
+			if _, ok := imagesMap[imagesMapKey]; !ok {
+				i = append(i, Data{
+					Name:      fmt.Sprintf("%s:%s", imageNameAndTag[0], imageNameAndTag[1]),
+					Unscanned: true,
+				})
 			}
 		}
 	}
@@ -170,11 +185,11 @@ func (i *Data) addVulnerabilityData(v Vulnerability) {
 
 }
 
-func getImageNameFromLabels(registry, repo, tag string) string {
+func getImageNameFromReport(registry, repo string) string {
 	if registry == "index.docker.io" {
 		// If Docker Hub, trim the registry prefix for readability
 		// Also trims `library/` from the prefix of the image name, which is a hidden username for Docker Hub official images
-		return fmt.Sprintf("%s:%s", strings.TrimPrefix(repo, "library/"), tag)
+		return strings.TrimPrefix(repo, "library/")
 	}
-	return fmt.Sprintf("%s/%s:%s", registry, repo, tag)
+	return fmt.Sprintf("%s/%s", registry, repo)
 }

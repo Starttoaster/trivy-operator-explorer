@@ -64,7 +64,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		return
 	}
-	imagesView := imagesview.GetView(vulnerabilityData, imagesview.Filters{})
+	imagesView := imagesview.GetView(vulnerabilityData, nil, imagesview.Filters{})
 
 	// Get compliance reports
 	complianceData, err := kube.GetComplianceReportList()
@@ -120,7 +120,13 @@ func imagesHandler(w http.ResponseWriter, r *http.Request) {
 		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		return
 	}
-	imageData := imagesview.GetView(data, imagesview.Filters{
+	// Get total images map -- we don't return here if we get an error because it's for optional helpful data
+	imagesMap, err := kube.GetContainerImagesMap()
+	if err != nil {
+		log.Logger.Error("error getting a list of running images", "error", err.Error())
+	}
+
+	imageData := imagesview.GetView(data, imagesMap, imagesview.Filters{
 		HasFix: hasFixBool,
 	})
 
