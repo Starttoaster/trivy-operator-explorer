@@ -39,7 +39,7 @@ func GetContainerImagesMap() (map[string]ContainerImage, error) {
 			imageName, imageTag := parseImageReference(container.Image)
 
 			// Create unique key from name, tag, and digest
-			key := fmt.Sprintf("%s|%s", imageName, imageTag)
+			key := fmt.Sprintf("%s:%s", imageName, imageTag)
 			imageMap[key] = ContainerImage{
 				Name: imageName,
 				Tag:  imageTag,
@@ -68,23 +68,10 @@ func GetContainerImages() ([]ContainerImage, error) {
 
 // parseImageReference splits an image reference into name and tag
 func parseImageReference(image string) (string, string) {
-	// Handle digest-based references (e.g., image@sha256:...)
-	if strings.Contains(image, "@") {
-		parts := strings.SplitN(image, "@", 2)
-		return parts[0], ""
-	}
+	// Image strings can come in two varieties:
+	// $registry/$name:$tag or $registry/$name:$tag@sha256:$hash
 
-	// Handle tag-based references (e.g., image:tag)
-	lastColon := strings.LastIndex(image, ":")
-	if lastColon > 0 {
-		// Check if this is a port (registry with port) or a tag
-		slashAfterColon := strings.Index(image[lastColon:], "/")
-		if slashAfterColon == -1 {
-			// No slash after colon, it's a tag
-			return image[:lastColon], image[lastColon+1:]
-		}
-	}
-
-	// No tag specified, default to "latest"
-	return image, "latest"
+	splitWithDigest := strings.Split(image, "@")
+	splitWithTag := strings.Split(splitWithDigest[0], ":")
+	return strings.TrimPrefix(splitWithTag[0], "docker.io/"), splitWithTag[1]
 }
