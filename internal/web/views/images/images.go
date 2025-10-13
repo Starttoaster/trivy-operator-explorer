@@ -2,9 +2,10 @@ package images
 
 import (
 	"fmt"
-	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
 	"sort"
 	"strings"
+
+	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
 
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
 )
@@ -131,8 +132,19 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 }
 
 func sortView(i View) View {
-	// Sort the slice by severity in descending order
+	// Sort the slice by severity in descending order, with unscanned items at the bottom
 	sort.Slice(i, func(j, k int) bool {
+		// If one is unscanned and the other isn't, unscanned goes to bottom
+		if i[j].Unscanned != i[k].Unscanned {
+			return !i[j].Unscanned // unscanned items (true) go to bottom
+		}
+
+		// If both are unscanned, sort alphabetically by name
+		if i[j].Unscanned && i[k].Unscanned {
+			return i[j].Name < i[k].Name
+		}
+
+		// For scanned items, sort by vulnerability severity in descending order
 		if len(i[j].CriticalVulnerabilities) != len(i[k].CriticalVulnerabilities) {
 			return len(i[j].CriticalVulnerabilities) > len(i[k].CriticalVulnerabilities)
 		}
