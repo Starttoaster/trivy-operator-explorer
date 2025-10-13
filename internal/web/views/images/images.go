@@ -157,7 +157,12 @@ func sortView(i View) View {
 			return len(i[j].MediumVulnerabilities) > len(i[k].MediumVulnerabilities)
 		}
 
-		return len(i[j].LowVulnerabilities) > len(i[k].LowVulnerabilities)
+		if len(i[j].LowVulnerabilities) != len(i[k].LowVulnerabilities) {
+			return len(i[j].LowVulnerabilities) > len(i[k].LowVulnerabilities)
+		}
+
+		// If all vulnerability counts are equal, sort alphabetically by name
+		return i[j].Name < i[k].Name
 	})
 
 	return i
