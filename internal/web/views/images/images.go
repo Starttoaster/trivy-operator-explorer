@@ -110,13 +110,11 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 	// Add unscanned image data to the image map using the total list of cluster images
 	// We don't use the image digest to determine uniqueness because for some reason trivy-operator and kubernetes
 	// sometimes disagree on the image's digest
-	if allClusterImagesMap != nil {
-		for k := range allClusterImagesMap {
-			if _, ok := iMap[k]; !ok {
-				iMap[k] = Data{
-					Name:      k,
-					Unscanned: true,
-				}
+	for k := range allClusterImagesMap {
+		if _, ok := iMap[k]; !ok {
+			iMap[k] = Data{
+				Name:      k,
+				Unscanned: true,
 			}
 		}
 	}
