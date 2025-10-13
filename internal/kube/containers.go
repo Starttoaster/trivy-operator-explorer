@@ -11,9 +11,17 @@ import (
 
 // ContainerImage contains the metadata for a container image
 type ContainerImage struct {
-	Name   string
-	Tag    string
-	Digest string
+	Name      string
+	Tag       string
+	Digest    string
+	Resources map[ResourceMetadata]struct{} // data about resources using this image
+}
+
+// ResourceMetadata data related to a k8s Pod
+type ResourceMetadata struct {
+	Kind      string
+	Name      string
+	Namespace string
 }
 
 // GetContainerImagesMap retrieves all container image metadata about running images
@@ -40,9 +48,28 @@ func GetContainerImagesMap() (map[string]ContainerImage, error) {
 
 			// Create unique key from name, tag, and digest
 			key := fmt.Sprintf("%s:%s", imageName, imageTag)
-			imageMap[key] = ContainerImage{
-				Name: imageName,
-				Tag:  imageTag,
+
+			// Check if image is already in map
+			if _, ok := imageMap[key]; !ok {
+				resMap := make(map[ResourceMetadata]struct{})
+				res := ResourceMetadata{
+					Namespace: pod.Namespace,
+					Kind:      "Pod",
+					Name:      pod.Name,
+				}
+				resMap[res] = struct{}{}
+				imageMap[key] = ContainerImage{
+					Name:      imageName,
+					Tag:       imageTag,
+					Resources: resMap,
+				}
+			} else {
+				res := ResourceMetadata{
+					Namespace: pod.Namespace,
+					Kind:      "Pod",
+					Name:      pod.Name,
+				}
+				imageMap[key].Resources[res] = struct{}{}
 			}
 		}
 	}

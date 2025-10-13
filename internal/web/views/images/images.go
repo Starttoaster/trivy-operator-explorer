@@ -110,10 +110,23 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 	// Add unscanned image data to the image map using the total list of cluster images
 	// We don't use the image digest to determine uniqueness because for some reason trivy-operator and kubernetes
 	// sometimes disagree on the image's digest
-	for k := range allClusterImagesMap {
+	for k, v := range allClusterImagesMap {
 		if _, ok := iMap[k]; !ok {
+			resourceData := make(map[ResourceMetadata]struct{})
+			for resource := range v.Resources {
+				r := ResourceMetadata{
+					Kind:      resource.Kind,
+					Name:      resource.Name,
+					Namespace: resource.Namespace,
+				}
+				resourceData[r] = struct{}{}
+			}
 			iMap[k] = Data{
-				Name:      k,
+				Name: k,
+				// Hack: digest is used by the /images page for the dropdown button's id
+				// Should be a safe assumption that an unscanned image is unique by registry/name:tag instead of digest, so just using this here
+				Digest:    k,
+				Resources: resourceData,
 				Unscanned: true,
 			}
 		}
