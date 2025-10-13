@@ -25,3 +25,10 @@ rules:
       #- clustersbomreports
       #- clusterconfigauditreports
       #- clustercompliancedetailreports
+  - verbs:
+      - get
+      - list
+    apiGroups:
+      - ""
+    resources:
+      - pods
