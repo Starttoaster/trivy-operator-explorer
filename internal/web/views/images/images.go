@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
+
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
 )
 
@@ -14,13 +16,30 @@ type Filters struct {
 }
 
 // GetView converts some report data to the /images view
-func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters) View {
-	var i View
+func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[string]kube.ContainerImage, filters Filters) View {
+	var iMap = make(map[string]Data)
 
 	for _, item := range data.Items {
-		// Construct image data from this VulnerabilityReport
+		// Determine if this image is already in the map
+		// We add its resources to the current item in the map if it already exists
+		iMapKey := getNiceImageFullName(getImageRegistry(item.Report.Registry.Server), getImageName(item.Report.Artifact.Repository), item.Report.Artifact.Tag)
+		_, ok := iMap[iMapKey]
+		if ok {
+			resourceData := ResourceMetadata{
+				Kind:      item.ObjectMeta.Labels["trivy-operator.resource.kind"],
+				Name:      item.ObjectMeta.Labels["trivy-operator.resource.name"],
+				Namespace: item.ObjectMeta.Labels["trivy-operator.resource.namespace"],
+			}
+			iMap[iMapKey].Resources[resourceData] = struct{}{}
+			continue
+		}
+
+		// If we make it here, the image wasn't in the map yet
+		// Process all image metadata
 		image := Data{
-			Name:      getImageNameFromLabels(item.Report.Registry.Server, item.Report.Artifact.Repository, item.Report.Artifact.Tag),
+			Registry:  getImageRegistry(item.Report.Registry.Server),
+			Name:      getImageName(item.Report.Artifact.Repository),
+			Tag:       item.Report.Artifact.Tag,
 			Digest:    item.Report.Artifact.Digest,
 			OSFamily:  string(item.Report.OS.Family),
 			OSVersion: item.Report.OS.Name,
@@ -36,21 +55,16 @@ func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters) View {
 		image.Resources = make(map[ResourceMetadata]struct{})
 		image.Resources[resourceData] = struct{}{}
 
-		// Check if the image used is unique, by fullname (registry/repository:tag) and digest
-		// This check is a little inefficient because it loops through the whole image list
-		// I was previously using maps for uniqueness and then converted over to slices because they're easier to sort server-side
-		imageIndex, uniqueImage := i.isUniqueImage(image.Name, image.Digest)
-
-		// Add image if unique, retrieving the new image's data index in the slice
-		if uniqueImage {
-			i = append(i, image)
-			imageIndex = len(i) - 1
-		} else {
-			// Add this resource to the image at the given index if image data already present
-			i[imageIndex].Resources[resourceData] = struct{}{}
-		}
-
+		// Process all vulnerabilities from this vulnerability report
+		vMap := make(map[string]Vulnerability)
 		for _, v := range item.Report.Vulnerabilities {
+			vMapKey := v.VulnerabilityID
+			_, ok := vMap[vMapKey]
+			if ok {
+				// Skip if we've already processed this vulnerability
+				continue
+			}
+
 			// Construct this vulnerability's view data
 			score := 0.0
 			if v.Score != nil {
@@ -74,19 +88,40 @@ func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters) View {
 				}
 			}
 
-			// If the image is not unique, we need to check if the vulnerability is unique too
-			// Seems rare, but Trivy Operator sometimes gives duplicate CVE data for an image
-			uniqueVuln := i[imageIndex].isUniqueImageVulnerability(vuln.ID, vuln.Severity)
-			if uniqueVuln {
-				// Fixed version counter for index page
-				if vuln.FixedVersion != "" {
-					i[imageIndex].FixAvailableCount++
-				} else {
-					i[imageIndex].NoFixAvailableCount++
-				}
-				i[imageIndex].addVulnerabilityData(vuln)
+			// Fixed version counter for index page
+			if vuln.FixedVersion == "" {
+				image.NoFixAvailableCount++
+			} else {
+				image.FixAvailableCount++
+			}
+
+			vMap[vMapKey] = vuln
+		}
+
+		// Add vulnerability map data to image data
+		for _, vuln := range vMap {
+			image.addVulnerabilityData(vuln)
+		}
+
+		// Add image to image map
+		iMap[iMapKey] = image
+	}
+
+	// Add unscanned image data to the image map using the total list of cluster images
+	// We don't use the image digest to determine uniqueness because for some reason trivy-operator and kubernetes
+	// sometimes disagree on the image's digest
+	for k := range allClusterImagesMap {
+		if _, ok := iMap[k]; !ok {
+			iMap[k] = Data{
+				Name:      k,
+				Unscanned: true,
 			}
 		}
+	}
+
+	var i View
+	for _, v := range iMap {
+		i = append(i, v)
 	}
 
 	i = sortView(i)
@@ -95,8 +130,19 @@ func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters) View {
 }
 
 func sortView(i View) View {
-	// Sort the slice by severity in descending order
+	// Sort the slice by severity in descending order, with unscanned items at the bottom
 	sort.Slice(i, func(j, k int) bool {
+		// If one is unscanned and the other isn't, unscanned goes to bottom
+		if i[j].Unscanned != i[k].Unscanned {
+			return !i[j].Unscanned // unscanned items (true) go to bottom
+		}
+
+		// If both are unscanned, sort alphabetically by name
+		if i[j].Unscanned && i[k].Unscanned {
+			return i[j].Name < i[k].Name
+		}
+
+		// For scanned items, sort by vulnerability severity in descending order
 		if len(i[j].CriticalVulnerabilities) != len(i[k].CriticalVulnerabilities) {
 			return len(i[j].CriticalVulnerabilities) > len(i[k].CriticalVulnerabilities)
 		}
@@ -109,51 +155,15 @@ func sortView(i View) View {
 			return len(i[j].MediumVulnerabilities) > len(i[k].MediumVulnerabilities)
 		}
 
-		return len(i[j].LowVulnerabilities) > len(i[k].LowVulnerabilities)
+		if len(i[j].LowVulnerabilities) != len(i[k].LowVulnerabilities) {
+			return len(i[j].LowVulnerabilities) > len(i[k].LowVulnerabilities)
+		}
+
+		// If all vulnerability counts are equal, sort alphabetically by name
+		return i[j].Name < i[k].Name
 	})
 
 	return i
-}
-
-func (i View) isUniqueImage(name, digest string) (int, bool) {
-	for index, image := range i {
-		if name == image.Name && digest == image.Digest {
-			return index, false
-		}
-	}
-
-	return 0, true
-}
-
-func (i Data) isUniqueImageVulnerability(cveID, severity string) bool {
-	switch strings.ToLower(severity) {
-	case "critical":
-		for _, vuln := range i.CriticalVulnerabilities {
-			if cveID == vuln.ID {
-				return false
-			}
-		}
-	case "high":
-		for _, vuln := range i.HighVulnerabilities {
-			if cveID == vuln.ID {
-				return false
-			}
-		}
-	case "medium":
-		for _, vuln := range i.MediumVulnerabilities {
-			if cveID == vuln.ID {
-				return false
-			}
-		}
-	case "low":
-		for _, vuln := range i.LowVulnerabilities {
-			if cveID == vuln.ID {
-				return false
-			}
-		}
-	}
-
-	return true
 }
 
 func (i *Data) addVulnerabilityData(v Vulnerability) {
@@ -167,14 +177,24 @@ func (i *Data) addVulnerabilityData(v Vulnerability) {
 	case "low":
 		i.LowVulnerabilities = append(i.LowVulnerabilities, v)
 	}
-
 }
 
-func getImageNameFromLabels(registry, repo, tag string) string {
+func getImageRegistry(registry string) string {
 	if registry == "index.docker.io" {
-		// If Docker Hub, trim the registry prefix for readability
-		// Also trims `library/` from the prefix of the image name, which is a hidden username for Docker Hub official images
-		return fmt.Sprintf("%s:%s", strings.TrimPrefix(repo, "library/"), tag)
+		// If Docker Hub, it's more common to see this without the index.docker.io registry, so we just strip it here
+		return ""
+	}
+	return registry
+}
+
+// getImageName trims the prefix on docker hub images
+func getImageName(repo string) string {
+	return strings.TrimPrefix(repo, "library/")
+}
+
+func getNiceImageFullName(registry, repo, tag string) string {
+	if registry == "" {
+		return fmt.Sprintf("%s:%s", repo, tag)
 	}
 	return fmt.Sprintf("%s/%s:%s", registry, repo, tag)
 }

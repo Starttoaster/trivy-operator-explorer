@@ -2,6 +2,7 @@ package kube
 
 import (
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -10,6 +11,7 @@ import (
 )
 
 var client *rest.RESTClient
+var coreClient *rest.RESTClient
 
 // InitClient initializes the Kubernetes client based on the provided configuration.
 // If inCluster is true, it uses in-cluster configuration; otherwise, it uses the kubeconfig file.
@@ -46,6 +48,20 @@ func InitClient(inCluster bool, kubeconfigPath string) error {
 	}
 
 	client = clientset
+
+	// Client for core Kubernetes resources (pods, services, etc.)
+	coreConfig := *config
+	coreConfig.ContentConfig.GroupVersion = &corev1.SchemeGroupVersion
+	coreConfig.APIPath = "/api"
+	coreConfig.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+	coreConfig.UserAgent = rest.DefaultKubernetesUserAgent()
+
+	coreClientset, err := rest.RESTClientFor(&coreConfig)
+	if err != nil {
+		return fmt.Errorf("error creating core clientset from config: %w", err)
+	}
+
+	coreClient = coreClientset
 
 	return nil
 }

@@ -5,7 +5,9 @@ type View []Data
 
 // Data contains data about image vulnerabilities and metadata about the Resources running those images
 type Data struct {
+	Registry                string                        // registry containing the image
 	Name                    string                        // name of the image
+	Tag                     string                        // tag of the image
 	Digest                  string                        // sha digest of the image
 	OSFamily                string                        // distro name like "debian" or "alpine"
 	OSVersion               string                        // distro version like "12.6"
@@ -19,6 +21,8 @@ type Data struct {
 	// Data counters for charts in the index page
 	FixAvailableCount   int
 	NoFixAvailableCount int
+
+	Unscanned bool
 }
 
 // ResourceMetadata data related to a k8s resource using a vulnerable image
