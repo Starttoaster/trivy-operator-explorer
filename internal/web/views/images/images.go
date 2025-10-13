@@ -113,7 +113,10 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 	for k := range allClusterImagesMap {
 		if _, ok := iMap[k]; !ok {
 			iMap[k] = Data{
-				Name:      k,
+				Name: k,
+				// Hack: digest is used by the /images page for the dropdown button's id
+				// Should be a safe assumption that an unscanned image is unique by registry/name:tag instead of digest, so just using this here
+				Digest:    k,
 				Unscanned: true,
 			}
 		}
