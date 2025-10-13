@@ -75,7 +75,7 @@ func getImageResourceMetadata(pod corev1.Pod) []ResourceMetadata {
 	resList := make([]ResourceMetadata, 0)
 
 	// If no owner references, just return this Pod
-	if pod.OwnerReferences == nil || len(pod.OwnerReferences) == 0 {
+	if len(pod.OwnerReferences) == 0 {
 		resList = append(resList, ResourceMetadata{
 			Kind:      "Pod",
 			Name:      pod.Name,
