@@ -52,29 +52,47 @@ func GetContainerImagesMap() (map[string]ContainerImage, error) {
 			// Check if image is already in map
 			if _, ok := imageMap[key]; !ok {
 				resMap := make(map[ResourceMetadata]struct{})
-				res := ResourceMetadata{
-					Namespace: pod.Namespace,
-					Kind:      "Pod",
-					Name:      pod.Name,
+				for _, res := range getImageResourceMetadata(pod) {
+					resMap[res] = struct{}{}
 				}
-				resMap[res] = struct{}{}
 				imageMap[key] = ContainerImage{
 					Name:      imageName,
 					Tag:       imageTag,
 					Resources: resMap,
 				}
 			} else {
-				res := ResourceMetadata{
-					Namespace: pod.Namespace,
-					Kind:      "Pod",
-					Name:      pod.Name,
+				for _, res := range getImageResourceMetadata(pod) {
+					imageMap[key].Resources[res] = struct{}{}
 				}
-				imageMap[key].Resources[res] = struct{}{}
 			}
 		}
 	}
 
 	return imageMap, nil
+}
+
+func getImageResourceMetadata(pod corev1.Pod) []ResourceMetadata {
+	resList := make([]ResourceMetadata, 0)
+
+	// If no owner references, just return this Pod
+	if len(pod.OwnerReferences) == 0 {
+		resList = append(resList, ResourceMetadata{
+			Kind:      "Pod",
+			Name:      pod.Name,
+			Namespace: pod.Namespace,
+		})
+		return resList
+	}
+
+	// If owner references found, put each in the resource meta list
+	for _, owner := range pod.OwnerReferences {
+		resList = append(resList, ResourceMetadata{
+			Kind:      owner.Kind,
+			Name:      owner.Name,
+			Namespace: pod.Namespace,
+		})
+	}
+	return resList
 }
 
 // GetContainerImages retrieves all container image metadata about running images
