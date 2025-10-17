@@ -1,12 +1,14 @@
 package web
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/starttoaster/trivy-operator-explorer/internal/db"
 	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
 	"github.com/starttoaster/trivy-operator-explorer/internal/web/content"
@@ -32,6 +34,7 @@ func Start(port string) error {
 	mux.HandleFunc("/", indexHandler)
 	mux.HandleFunc("/images", imagesHandler)
 	mux.HandleFunc("/image", imageHandler)
+	mux.HandleFunc("/ignore", ignoreHandler)
 	mux.HandleFunc("/configaudits", configauditsHandler)
 	mux.HandleFunc("/configaudit", configauditHandler)
 	mux.HandleFunc("/clusteraudits", clusterauditsHandler)
@@ -154,7 +157,6 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
 		return
 	}
-
 	// Parse URL query params
 	q := r.URL.Query()
 
@@ -184,6 +186,16 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	showIgnored := q.Get("showignored")
+	var showIgnoredBool bool
+	if showIgnored != "" {
+		var err error
+		showIgnoredBool, err = strconv.ParseBool(showIgnored)
+		if err != nil {
+			log.Logger.Warn("could not parse showignored query parameter to bool type, ignoring filter", "raw", showIgnored, "error", err.Error())
+		}
+	}
+
 	// Get vulnerability reports
 	reports, err := kube.GetVulnerabilityReportList()
 	if err != nil {
@@ -191,14 +203,31 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get ignored CVEs for this image (only if not showing ignored)
+	var ignoredCVEs map[string]bool
+	if !showIgnoredBool {
+		// First, we need to determine the registry, repository, and tag from the image name
+		registry, repository, tag := parseImageName(imageName)
+
+		// Get ignored CVEs from database
+		var err error
+		ignoredCVEs, err = db.GetIgnoredCVEsForImage(registry, repository, tag)
+		if err != nil {
+			log.Logger.Error("error getting ignored CVEs", "error", err.Error())
+			// Continue without ignored CVEs rather than failing the request
+			ignoredCVEs = nil
+		}
+	}
+
 	// Get image view from reports
 	view, found := imageview.GetView(reports, imageview.Filters{
-		Name:      imageName,
-		Digest:    imageDigest,
-		Severity:  severity,
-		HasFix:    hasFixBool,
-		Resources: strings.Split(resources, ","),
-	})
+		Name:        imageName,
+		Digest:      imageDigest,
+		Severity:    severity,
+		HasFix:      hasFixBool,
+		ShowIgnored: showIgnoredBool,
+		Resources:   strings.Split(resources, ","),
+	}, ignoredCVEs)
 
 	// If the selected image from query params was not found, 404
 	if !found {
@@ -223,6 +252,41 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
 		return
 	}
+}
+
+func ignoreHandler(w http.ResponseWriter, r *http.Request) {
+	// Only allow POST requests
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse JSON request body
+	var requestData db.IgnoredImageVulnerability
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+		log.Logger.Error("Failed to decode ignore request", "error", err)
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	// Validate required fields
+	if requestData.Repository == "" || requestData.Tag == "" || requestData.CVEID == "" {
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return
+	}
+
+	// Set default registry for Docker Hub if empty
+	if requestData.Registry == "" {
+		requestData.Registry = "index.docker.io"
+	}
+
+	// Insert into database
+	if err := db.InsertIgnoredImageVulnerability(requestData); err != nil {
+		log.Logger.Error("Failed to insert ignored vulnerability", "error", err)
+		http.Error(w, "Failed to save ignore request", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func rolesHandler(w http.ResponseWriter, r *http.Request) {
@@ -692,4 +756,61 @@ func complianceReportHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
 		return
 	}
+}
+
+// parseImageName parses an image name string into registry, repository, and tag components
+// Examples:
+// - "nginx:latest" -> registry="index.docker.io", repository="nginx", tag="latest"
+// - "gcr.io/project/image:tag" -> registry="gcr.io", repository="project/image", tag="tag"
+// - "localhost:5000/myapp:v1.0" -> registry="localhost:5000", repository="myapp", tag="v1.0"
+func parseImageName(imageName string) (registry, repository, tag string) {
+	// Default registry for Docker Hub
+	registry = "index.docker.io"
+	repository = imageName
+	tag = "latest"
+
+	// Check if there's a tag
+	if lastColon := strings.LastIndex(imageName, ":"); lastColon != -1 {
+		// Check if this is a port number (like localhost:5000)
+		// If there's a slash before the colon, it's likely a tag
+		if slashIndex := strings.LastIndex(imageName[:lastColon], "/"); slashIndex != -1 {
+			tag = imageName[lastColon+1:]
+			repository = imageName[:lastColon]
+		} else {
+			// No slash before colon, might be a port or tag
+			// If it contains a dot or is all digits, it's likely a port
+			potentialTag := imageName[lastColon+1:]
+			if strings.Contains(potentialTag, ".") || isNumeric(potentialTag) {
+				// This is likely a port, not a tag
+				repository = imageName
+				tag = "latest"
+			} else {
+				// This is likely a tag
+				tag = potentialTag
+				repository = imageName[:lastColon]
+			}
+		}
+	}
+
+	// Check if there's a registry (contains a slash and potentially a port)
+	if slashIndex := strings.Index(repository, "/"); slashIndex != -1 {
+		potentialRegistry := repository[:slashIndex]
+		// If it contains a dot or colon, it's likely a registry
+		if strings.Contains(potentialRegistry, ".") || strings.Contains(potentialRegistry, ":") {
+			registry = potentialRegistry
+			repository = repository[slashIndex+1:]
+		}
+	}
+
+	return registry, repository, tag
+}
+
+// isNumeric checks if a string contains only digits
+func isNumeric(s string) bool {
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return len(s) > 0
 }

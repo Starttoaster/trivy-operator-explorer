@@ -32,6 +32,7 @@ import (
 //go:embed static/js/images-hasfix.js
 //go:embed static/js/images-resources-table.js
 //go:embed static/js/image-resources.js
+//go:embed static/js/image-ignore.js
 var static embed.FS
 
 func main() {

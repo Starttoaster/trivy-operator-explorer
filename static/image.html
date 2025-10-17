@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-  <title>{{ .Data.Name }}</title>
+  <title>{{ if .Data.Registry }}{{ .Data.Registry }}/{{ end }}{{ .Data.Repository }}{{ if .Data.Tag }}:{{ .Data.Tag }}{{ end }}</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/x-icon" href="/static/img/t.ico">
   <link href="/static/css/output.css" rel="stylesheet">
   <script src="/static/js/images-hasfix.js"></script>
   <script src="/static/js/image-resources.js"></script>
+  <script src="/static/js/image-ignore.js"></script>
 </head>
 <body class="min-h-screen bg-gray-200 dark:bg-indigo-900">
      
@@ -19,7 +20,7 @@
           <div class="hidden w-full md:block md:w-auto" id="navbar-default">
             <ul class="font-medium flex flex-col p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:flex-row md:space-x-8 rtl:space-x-reverse md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
               <li>
-                <span class="block py-2 px-3 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 dark:text-white md:dark:text-blue-200" aria-current="page">{{ .Data.Name }}</span>
+                <span class="block py-2 px-3 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 dark:text-white md:dark:text-blue-200" aria-current="page">{{ if .Data.Registry }}{{ .Data.Registry }}/{{ end }}{{ .Data.Repository }}{{ if .Data.Tag }}:{{ .Data.Tag }}{{ end }}</span>
               </li>
               <li>
                 <span class="block py-2 px-3 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-400 md:p-0 dark:text-white md:dark:text-blue-500" aria-current="page">{{ .Data.Digest }}</span>
@@ -66,41 +67,112 @@
                         <th scope="col" class="px-6 py-3">
                             Fixed In
                         </th>
+                        <th scope="col" class="px-6 py-3">
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
                     {{ range $data := .Data.Vulnerabilities }}
-                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
-                        <th scope="row" class="px-6 py-4 font-medium text-black whitespace-nowrap dark:text-white">
-                            <a href="{{ $data.URL }}" >
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 {{ if $data.IsIgnored }}ignored-row{{ end }}">
+                        <th scope="row" class="px-6 py-4 font-medium whitespace-nowrap {{ if $data.IsIgnored }}text-gray-400 dark:text-gray-500{{ else }}text-black dark:text-white{{ end }}">
+                            <a href="{{ $data.URL }}" class="{{ if $data.IsIgnored }}line-through decoration-2 decoration-gray-400{{ end }}">
                                 <span class="ms-3">{{ $data.ID }}</span>
+                                {{ if $data.IsIgnored }}
+                                <span class="ml-2 bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full dark:bg-yellow-900 dark:text-yellow-300">
+                                    IGNORED
+                                </span>
+                                {{ end }}
                             </a>
                         </th>
                         <td class="px-6 py-4">
                             {{if eq $data.Severity "CRITICAL"}}
-                            <span class="bg-red-200 text-black text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-100">{{ $data.Severity }}</span>
+                            <span class="bg-red-200 text-black text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-100 {{ if $data.IsIgnored }}opacity-50{{ end }}">{{ $data.Severity }}</span>
                             {{else if eq $data.Severity "HIGH"}}
-                            <span class="bg-orange-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-orange-900 dark:text-orange-100">{{ $data.Severity }}</span>
+                            <span class="bg-orange-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-orange-900 dark:text-orange-100 {{ if $data.IsIgnored }}opacity-50{{ end }}">{{ $data.Severity }}</span>
                             {{else if eq $data.Severity "MEDIUM"}}
-                            <span class="bg-yellow-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-yellow-900 dark:text-yellow-100">{{ $data.Severity }}</span>
+                            <span class="bg-yellow-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-yellow-900 dark:text-yellow-100 {{ if $data.IsIgnored }}opacity-50{{ end }}">{{ $data.Severity }}</span>
                             {{else if eq $data.Severity "LOW"}}
-                            <span class="bg-blue-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-blue-900 dark:text-blue-100">{{ $data.Severity }}</span>
+                            <span class="bg-blue-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-blue-900 dark:text-blue-100 {{ if $data.IsIgnored }}opacity-50{{ end }}">{{ $data.Severity }}</span>
                             {{end}}
                         </td>
-                        <td class="px-6 py-4 text-black dark:text-white">
+                        <td class="px-6 py-4 {{ if $data.IsIgnored }}text-gray-400 dark:text-gray-500{{ else }}text-black dark:text-white{{ end }}">
                             {{ $data.Score }}
                         </td>
-                        <td class="px-6 py-4 text-black dark:text-white">
+                        <td class="px-6 py-4 {{ if $data.IsIgnored }}text-gray-400 dark:text-gray-500{{ else }}text-black dark:text-white{{ end }}">
                             {{ $data.Resource }}
                         </td>
-                        <td class="px-6 py-4 text-black dark:text-white">
+                        <td class="px-6 py-4 {{ if $data.IsIgnored }}text-gray-400 dark:text-gray-500{{ else }}text-black dark:text-white{{ end }}">
                             {{ $data.Title }}
                         </td>
-                        <td class="px-6 py-4 text-black dark:text-white">
+                        <td class="px-6 py-4 {{ if $data.IsIgnored }}text-gray-400 dark:text-gray-500{{ else }}text-black dark:text-white{{ end }}">
                             {{ $data.VulnerableVersion }}
                         </td>
-                        <td class="px-6 py-4 text-black dark:text-white">
+                        <td class="px-6 py-4 {{ if $data.IsIgnored }}text-gray-400 dark:text-gray-500{{ else }}text-black dark:text-white{{ end }}">
                             {{ $data.FixedVersion }}
+                        </td>
+                        <td class="px-6 py-4 text-black dark:text-white">
+                            <div class="relative">
+                                <button 
+                                    type="button" 
+                                    class="ignore-btn text-gray-400 hover:text-red-600 dark:text-gray-500 dark:hover:text-red-400 transition-colors duration-200"
+                                    data-cve-id="{{ $data.ID }}"
+                                    data-registry="{{ $.Data.Registry }}"
+                                    data-repository="{{ $.Data.Repository }}"
+                                    data-tag="{{ $.Data.Tag }}"
+                                    title="Ignore CVE"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                                
+                                <!-- Hidden dropdown form -->
+                                <div class="ignore-dropdown fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-4 w-80 z-50 hidden">
+                                    <form class="ignore-form space-y-3">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                Reason for ignoring
+                                            </label>
+                                            <textarea 
+                                                name="reason" 
+                                                rows="3" 
+                                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                                                placeholder="Enter reason for ignoring this CVE..."
+                                                required
+                                            ></textarea>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                Specificity Level
+                                            </label>
+                                            <select 
+                                                name="specificity_level" 
+                                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                                                required
+                                            >
+                                                <option value="1">Registry + Repository ({{ if $.Data.Registry }}{{ $.Data.Registry }}/{{ end }}{{ $.Data.Repository }})</option>
+                                                <option value="2">Registry + Repository + Tag ({{ if $.Data.Registry }}{{ $.Data.Registry }}/{{ end }}{{ $.Data.Repository }}{{ if $.Data.Tag }}:{{ $.Data.Tag }}{{ end }})</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="flex justify-end space-x-2">
+                                            <button 
+                                                type="button" 
+                                                class="cancel-btn px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button 
+                                                type="submit" 
+                                                class="submit-btn px-4 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-md transition-colors duration-200"
+                                            >
+                                                Ignore CVE
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                     {{ end }}

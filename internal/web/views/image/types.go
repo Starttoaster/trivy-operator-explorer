@@ -5,7 +5,9 @@ type View Data
 
 // Data contains data about image vulnerabilities and metadata about the Resources running that image
 type Data struct {
-	Name               string // name of the image
+	Registry           string // registry server (e.g., index.docker.io)
+	Repository         string // repository name
+	Tag                string // image tag
 	Digest             string // sha digest of the image
 	OSFamily           string // distro name like "debian" or "alpine"
 	OSVersion          string // distro version like "12.6"
@@ -31,4 +33,6 @@ type Vulnerability struct {
 	VulnerableVersion string
 	// The version this vulnerability is fixed in
 	FixedVersion string
+	// Whether this CVE is ignored
+	IsIgnored bool
 }
