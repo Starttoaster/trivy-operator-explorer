@@ -55,3 +55,26 @@ func GetIgnoredCVEsForImage(registry, repository, tag string) (map[string]bool, 
 		"count", len(ignoredCVEs))
 	return ignoredCVEs, nil
 }
+
+// DeleteIgnoredImageVulnerability removes an ignored CVE from the database
+func DeleteIgnoredImageVulnerability(registry, repository, tag, cveID string) error {
+	query := `DELETE FROM ignoredImageVulnerabilities 
+			  WHERE registry = ? AND repository = ? AND tag = ? AND cve_id = ?`
+
+	result, err := Client.Exec(query, registry, repository, tag, cveID)
+	if err != nil {
+		return fmt.Errorf("failed to delete ignored image vulnerability: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no ignored vulnerability found to delete")
+	}
+
+	log.Logger.Info("Successfully deleted ignored image vulnerability", "registry", registry, "repository", repository, "tag", tag, "cve_id", cveID)
+	return nil
+}

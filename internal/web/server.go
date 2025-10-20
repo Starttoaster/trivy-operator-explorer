@@ -264,22 +264,21 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ignoreHandler(w http.ResponseWriter, r *http.Request) {
-	// Only allow POST requests
-	if r.Method != http.MethodPost {
+	if r.Method != http.MethodPost && r.Method != http.MethodDelete {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Parse JSON request body
+	// Parse JSON request body for unignore
 	var requestData db.IgnoredImageVulnerability
 	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
-		log.Logger.Error("Failed to decode ignore request", "error", err)
+		log.Logger.Error("Failed to decode unignore request", "error", err)
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 
-	// Validate required fields
-	if requestData.Repository == "" || requestData.Tag == "" || requestData.CVEID == "" || requestData.Reason == "" {
+	// Validate always required fields
+	if requestData.Repository == "" || requestData.Tag == "" || requestData.CVEID == "" {
 		http.Error(w, "Missing required fields", http.StatusBadRequest)
 		return
 	}
@@ -289,12 +288,30 @@ func ignoreHandler(w http.ResponseWriter, r *http.Request) {
 		requestData.Registry = "index.docker.io"
 	}
 
-	// Insert into database
-	if err := db.InsertIgnoredImageVulnerability(requestData); err != nil {
-		log.Logger.Error("Failed to insert ignored vulnerability", "error", err)
-		http.Error(w, "Failed to save ignore request", http.StatusInternalServerError)
-		return
+	// Handle both POST (ignore) and DELETE (unignore) requests
+	if r.Method == http.MethodPost {
+		// Validate additional required fields
+		if requestData.Reason == "" {
+			http.Error(w, "Missing required fields", http.StatusBadRequest)
+			return
+		}
+
+		// Insert into database
+		if err := db.InsertIgnoredImageVulnerability(requestData); err != nil {
+			log.Logger.Error("Failed to insert ignored vulnerability", "error", err)
+			http.Error(w, "Failed to save ignore request", http.StatusInternalServerError)
+			return
+		}
+
+	} else if r.Method == http.MethodDelete {
+		// Delete from database
+		if err := db.DeleteIgnoredImageVulnerability(requestData.Registry, requestData.Repository, requestData.Tag, requestData.CVEID); err != nil {
+			log.Logger.Error("Failed to delete ignored vulnerability", "error", err)
+			http.Error(w, "Failed to unignore CVE", http.StatusInternalServerError)
+			return
+		}
 	}
+
 	w.WriteHeader(http.StatusOK)
 }
 

@@ -84,6 +84,70 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
+        // Handle unignore button clicks
+        if (e.target.closest('.unignore-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const button = e.target.closest('.unignore-btn');
+            
+            // Get button data attributes
+            const cveId = button.dataset.cveId;
+            const registry = button.dataset.registry;
+            const repository = button.dataset.repository;
+            const tag = button.dataset.tag;
+            
+            // Confirm unignore action
+            if (!confirm(`Are you sure you want to unignore CVE ${cveId}?`)) {
+                return;
+            }
+            
+            // Prepare request data
+            const actualRegistry = registry || 'index.docker.io';
+            
+            const requestData = {
+                registry: actualRegistry,
+                repository: repository || '',
+                tag: tag || '',
+                cve_id: cveId
+            };
+            
+            // Show loading state
+            button.disabled = true;
+            const originalHTML = button.innerHTML;
+            button.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>';
+            
+            // Send DELETE request to server
+            fetch('/ignore', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Success - show success message and reload page
+                    showSuccessMessage(`CVE ${cveId} has been unignored successfully.`);
+                    // Reload page to refresh the view
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error unignoring CVE:', error);
+                showErrorMessage(`Failed to unignore CVE ${cveId}. Please try again.`);
+            })
+            .finally(() => {
+                // Reset button state
+                button.disabled = false;
+                button.innerHTML = originalHTML;
+            });
+        }
+        
         // Handle cancel button clicks
         if (e.target.closest('.cancel-btn')) {
             e.preventDefault();
