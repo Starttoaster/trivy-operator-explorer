@@ -203,20 +203,13 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get ignored CVEs for this image (only if not showing ignored)
-	var ignoredCVEs map[string]bool
-	if !showIgnoredBool {
-		// First, we need to determine the registry, repository, and tag from the image name
-		registry, repository, tag := parseImageName(imageName)
-
-		// Get ignored CVEs from database
-		var err error
-		ignoredCVEs, err = db.GetIgnoredCVEsForImage(registry, repository, tag)
-		if err != nil {
-			log.Logger.Error("error getting ignored CVEs", "error", err.Error())
-			// Continue without ignored CVEs rather than failing the request
-			ignoredCVEs = nil
-		}
+	// Get ignored CVEs from database
+	registry, repository, tag := parseImageName(imageName)
+	ignoredCVEs, err := db.GetIgnoredCVEsForImage(registry, repository, tag)
+	if err != nil {
+		log.Logger.Error("error getting ignored CVEs", "error", err.Error())
+		// Continue without ignored CVEs rather than failing the request
+		ignoredCVEs = nil
 	}
 
 	// Get image view from reports

@@ -75,7 +75,7 @@
                     {{ range $data := .Data.Vulnerabilities }}
                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 {{ if $data.IsIgnored }}ignored-row{{ end }}">
                         <th scope="row" class="px-6 py-4 font-medium whitespace-nowrap {{ if $data.IsIgnored }}text-gray-400 dark:text-gray-500{{ else }}text-black dark:text-white{{ end }}">
-                            <a href="{{ $data.URL }}" class="{{ if $data.IsIgnored }}line-through decoration-2 decoration-gray-400{{ end }}">
+                            <a href="{{ $data.URL }}" class="{{ if $data.IsIgnored }}decoration-2 decoration-gray-400{{ end }}">
                                 <span class="ms-3">{{ $data.ID }}</span>
                                 {{ if $data.IsIgnored }}
                                 <span class="ml-2 bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full dark:bg-yellow-900 dark:text-yellow-300">
