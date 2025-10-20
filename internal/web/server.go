@@ -263,7 +263,7 @@ func ignoreHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate required fields
-	if requestData.Repository == "" || requestData.Tag == "" || requestData.CVEID == "" {
+	if requestData.Repository == "" || requestData.Tag == "" || requestData.CVEID == "" || requestData.Reason == "" {
 		http.Error(w, "Missing required fields", http.StatusBadRequest)
 		return
 	}

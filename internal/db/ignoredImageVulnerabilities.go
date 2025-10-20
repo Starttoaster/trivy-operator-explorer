@@ -1,7 +1,6 @@
 package db
 
 import (
-	"database/sql"
 	"fmt"
 
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
@@ -38,7 +37,6 @@ func InsertIgnoredImageVulnerability(vuln IgnoredImageVulnerability) error {
 
 // GetIgnoredCVEsForImage returns a map of CVE IDs that are ignored for the given image
 func GetIgnoredCVEsForImage(registry, repository, tag string) (map[string]bool, error) {
-	ignoredCVEs := make(map[string]bool)
 	query := `SELECT cve_id FROM ignoredImageVulnerabilities 
 			  WHERE registry = ? AND repository = ? AND tag = ?`
 
@@ -48,6 +46,7 @@ func GetIgnoredCVEsForImage(registry, repository, tag string) (map[string]bool, 
 		return nil, fmt.Errorf("failed to get ignores: %w", err)
 	}
 
+	ignoredCVEs := make(map[string]bool)
 	for _, cveID := range cveIDs {
 		ignoredCVEs[cveID] = true
 	}
