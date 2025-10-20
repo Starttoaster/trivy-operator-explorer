@@ -3,6 +3,7 @@ package web
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 	"html/template"
 	"net/http"
 	"strconv"
@@ -221,12 +222,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		ignoredCVEs = nil
 	}
 
-	var imageName string
-	if imageRegistry == "index.docker.io" {
-		imageName = fmt.Sprintf("%s:%s", imageRepository, imageTag)
-	} else {
-		imageName = fmt.Sprintf("%s/%s:%s", imageRegistry, imageRepository, imageTag)
-	}
+	imageName := utils.AssembleImageFullName(utils.FormatPrettyImageRegistry(imageRegistry), utils.FormatPrettyImageRepo(imageRepository), imageTag)
 
 	// Get image view from reports
 	view, found := imageview.GetView(reports, imageview.Filters{

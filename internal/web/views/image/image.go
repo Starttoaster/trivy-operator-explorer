@@ -3,6 +3,7 @@ package image
 import (
 	"fmt"
 	"github.com/starttoaster/trivy-operator-explorer/internal/db"
+	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 	"sort"
 	"strings"
 
@@ -33,8 +34,8 @@ func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters, ignoredCVE
 
 		// Construct image data from this VulnerabilityReport
 		i := View{
-			Registry:   getImageRegistry(item.Report.Registry.Server),
-			Repository: getImageName(item.Report.Artifact.Repository),
+			Registry:   utils.FormatPrettyImageRegistry(item.Report.Registry.Server),
+			Repository: utils.FormatPrettyImageRepo(item.Report.Artifact.Repository),
 			Tag:        item.Report.Artifact.Tag,
 			Digest:     item.Report.Artifact.Digest,
 			OSFamily:   string(item.Report.OS.Family),
@@ -157,24 +158,4 @@ func sortView(v View) View {
 	})
 
 	return v
-}
-
-func getImageRegistry(registry string) string {
-	if registry == "index.docker.io" {
-		// If Docker Hub, it's more common to see this without the index.docker.io registry, so we just strip it here
-		return ""
-	}
-	return registry
-}
-
-// getImageName trims the prefix on docker hub images
-func getImageName(repo string) string {
-	return strings.TrimPrefix(repo, "library/")
-}
-
-func getNiceImageFullName(registry, repo, tag string) string {
-	if registry == "" {
-		return fmt.Sprintf("%s:%s", repo, tag)
-	}
-	return fmt.Sprintf("%s/%s:%s", registry, repo, tag)
 }
