@@ -161,9 +161,15 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 
 	// Check query params -- 404 if required params not passed
-	imageName := q.Get("image")
-	if imageName == "" {
-		log.Logger.Error("image name query param missing from request")
+	imageRepository := q.Get("repository")
+	if imageRepository == "" {
+		log.Logger.Error("image repository query param missing from request")
+		http.NotFound(w, r)
+		return
+	}
+	imageTag := q.Get("tag")
+	if imageTag == "" {
+		log.Logger.Error("image tag query param missing from request")
 		http.NotFound(w, r)
 		return
 	}
@@ -172,6 +178,10 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		log.Logger.Error("image digest query param missing from request")
 		http.NotFound(w, r)
 		return
+	}
+	imageRegistry := q.Get("registry")
+	if imageRegistry == "" {
+		imageRegistry = "index.docker.io"
 	}
 	severity := q.Get("severity")
 	resources := q.Get("resources")
@@ -204,12 +214,18 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get ignored CVEs from database
-	registry, repository, tag := parseImageName(imageName)
-	ignoredCVEs, err := db.GetIgnoredCVEsForImage(registry, repository, tag)
+	ignoredCVEs, err := db.GetIgnoredCVEsForImage(imageRegistry, imageRepository, imageTag)
 	if err != nil {
 		log.Logger.Error("error getting ignored CVEs", "error", err.Error())
 		// Continue without ignored CVEs rather than failing the request
 		ignoredCVEs = nil
+	}
+
+	var imageName string
+	if imageRegistry == "index.docker.io" {
+		imageName = fmt.Sprintf("%s:%s", imageRepository, imageTag)
+	} else {
+		imageName = fmt.Sprintf("%s/%s:%s", imageRegistry, imageRepository, imageTag)
 	}
 
 	// Get image view from reports
@@ -749,61 +765,4 @@ func complianceReportHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
 		return
 	}
-}
-
-// parseImageName parses an image name string into registry, repository, and tag components
-// Examples:
-// - "nginx:latest" -> registry="index.docker.io", repository="nginx", tag="latest"
-// - "gcr.io/project/image:tag" -> registry="gcr.io", repository="project/image", tag="tag"
-// - "localhost:5000/myapp:v1.0" -> registry="localhost:5000", repository="myapp", tag="v1.0"
-func parseImageName(imageName string) (registry, repository, tag string) {
-	// Default registry for Docker Hub
-	registry = "index.docker.io"
-	repository = imageName
-	tag = "latest"
-
-	// Check if there's a tag
-	if lastColon := strings.LastIndex(imageName, ":"); lastColon != -1 {
-		// Check if this is a port number (like localhost:5000)
-		// If there's a slash before the colon, it's likely a tag
-		if slashIndex := strings.LastIndex(imageName[:lastColon], "/"); slashIndex != -1 {
-			tag = imageName[lastColon+1:]
-			repository = imageName[:lastColon]
-		} else {
-			// No slash before colon, might be a port or tag
-			// If it contains a dot or is all digits, it's likely a port
-			potentialTag := imageName[lastColon+1:]
-			if strings.Contains(potentialTag, ".") || isNumeric(potentialTag) {
-				// This is likely a port, not a tag
-				repository = imageName
-				tag = "latest"
-			} else {
-				// This is likely a tag
-				tag = potentialTag
-				repository = imageName[:lastColon]
-			}
-		}
-	}
-
-	// Check if there's a registry (contains a slash and potentially a port)
-	if slashIndex := strings.Index(repository, "/"); slashIndex != -1 {
-		potentialRegistry := repository[:slashIndex]
-		// If it contains a dot or colon, it's likely a registry
-		if strings.Contains(potentialRegistry, ".") || strings.Contains(potentialRegistry, ":") {
-			registry = potentialRegistry
-			repository = repository[slashIndex+1:]
-		}
-	}
-
-	return registry, repository, tag
-}
-
-// isNumeric checks if a string contains only digits
-func isNumeric(s string) bool {
-	for _, r := range s {
-		if r < '0' || r > '9' {
-			return false
-		}
-	}
-	return len(s) > 0
 }
