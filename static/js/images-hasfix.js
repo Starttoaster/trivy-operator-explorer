@@ -8,12 +8,28 @@ function handleHasFixChange(checkbox) {
     window.location.href = url.toString();
 }
 
-// Check hasfix URL parameter on page load
+function handleShowIgnoredChange(checkbox) {
+    const url = new URL(window.location.href);
+    if (checkbox.checked) {
+        url.searchParams.set('showignored', 'true');
+    } else {
+        url.searchParams.delete('showignored');
+    }
+    window.location.href = url.toString();
+}
+
 window.onload = function() {
     const url = new URL(window.location.href);
 
+    // Check hasfix parameter
     const hasFixCheckbox = document.getElementById('hasFixCheckbox');
     if (hasFixCheckbox) {
         hasFixCheckbox.checked = url.searchParams.get('hasfix') === 'true';
+    }
+
+    // Check showignored parameter
+    const showIgnoredCheckbox = document.getElementById('showIgnoredCheckbox');
+    if (showIgnoredCheckbox) {
+        showIgnoredCheckbox.checked = url.searchParams.get('showignored') === 'true';
     }
 }

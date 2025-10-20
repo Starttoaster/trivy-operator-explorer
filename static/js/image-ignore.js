@@ -129,9 +129,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (response.ok) {
                     // Success - show success message and reload page
                     showSuccessMessage(`CVE ${cveId} has been unignored successfully.`);
-                    // Reload page to refresh the view
+                    // Reload page to refresh the view, preserving URL parameters
                     setTimeout(() => {
-                        window.location.reload();
+                        window.location.href = window.location.href;
                     }, 1000);
                 } else {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -212,19 +212,13 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(response => {
                 if (response.ok) {
-                    // Success - hide dropdown and show success message
-                    dropdown.classList.add('hidden');
-                    
-                    // Remove backdrop
-                    const backdrop = document.getElementById('ignore-backdrop');
-                    if (backdrop) {
-                        backdrop.remove();
-                    }
-                    
+                    // Success - show success message and reload page
                     showSuccessMessage(`CVE ${cveId} has been ignored successfully.`);
                     
-                    // Reset form
-                    form.reset();
+                    // Reload page to refresh the view, preserving URL parameters
+                    setTimeout(() => {
+                        window.location.href = window.location.href;
+                    }, 1000);
                 } else {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
