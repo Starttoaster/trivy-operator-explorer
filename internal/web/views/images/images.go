@@ -1,7 +1,7 @@
 package images
 
 import (
-	"fmt"
+	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 	"sort"
 	"strings"
 
@@ -22,7 +22,7 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 	for _, item := range data.Items {
 		// Determine if this image is already in the map
 		// We add its resources to the current item in the map if it already exists
-		iMapKey := getNiceImageFullName(getImageRegistry(item.Report.Registry.Server), getImageName(item.Report.Artifact.Repository), item.Report.Artifact.Tag)
+		iMapKey := utils.AssembleImageFullName(utils.FormatPrettyImageRegistry(item.Report.Registry.Server), utils.FormatPrettyImageRepo(item.Report.Artifact.Repository), item.Report.Artifact.Tag)
 		_, ok := iMap[iMapKey]
 		if ok {
 			resourceData := ResourceMetadata{
@@ -37,8 +37,8 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 		// If we make it here, the image wasn't in the map yet
 		// Process all image metadata
 		image := Data{
-			Registry:  getImageRegistry(item.Report.Registry.Server),
-			Name:      getImageName(item.Report.Artifact.Repository),
+			Registry:  utils.FormatPrettyImageRegistry(item.Report.Registry.Server),
+			Name:      utils.FormatPrettyImageRepo(item.Report.Artifact.Repository),
 			Tag:       item.Report.Artifact.Tag,
 			Digest:    item.Report.Artifact.Digest,
 			OSFamily:  string(item.Report.OS.Family),
@@ -190,24 +190,4 @@ func (i *Data) addVulnerabilityData(v Vulnerability) {
 	case "low":
 		i.LowVulnerabilities = append(i.LowVulnerabilities, v)
 	}
-}
-
-func getImageRegistry(registry string) string {
-	if registry == "index.docker.io" {
-		// If Docker Hub, it's more common to see this without the index.docker.io registry, so we just strip it here
-		return ""
-	}
-	return registry
-}
-
-// getImageName trims the prefix on docker hub images
-func getImageName(repo string) string {
-	return strings.TrimPrefix(repo, "library/")
-}
-
-func getNiceImageFullName(registry, repo, tag string) string {
-	if registry == "" {
-		return fmt.Sprintf("%s:%s", repo, tag)
-	}
-	return fmt.Sprintf("%s/%s:%s", registry, repo, tag)
 }

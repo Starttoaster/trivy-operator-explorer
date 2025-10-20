@@ -1,12 +1,15 @@
 package web
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
 
+	"github.com/starttoaster/trivy-operator-explorer/internal/db"
 	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
 	"github.com/starttoaster/trivy-operator-explorer/internal/web/content"
@@ -32,6 +35,7 @@ func Start(port string) error {
 	mux.HandleFunc("/", indexHandler)
 	mux.HandleFunc("/images", imagesHandler)
 	mux.HandleFunc("/image", imageHandler)
+	mux.HandleFunc("/ignore", ignoreHandler)
 	mux.HandleFunc("/configaudits", configauditsHandler)
 	mux.HandleFunc("/configaudit", configauditHandler)
 	mux.HandleFunc("/clusteraudits", clusterauditsHandler)
@@ -154,14 +158,19 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
 		return
 	}
-
 	// Parse URL query params
 	q := r.URL.Query()
 
 	// Check query params -- 404 if required params not passed
-	imageName := q.Get("image")
-	if imageName == "" {
-		log.Logger.Error("image name query param missing from request")
+	imageRepository := q.Get("repository")
+	if imageRepository == "" {
+		log.Logger.Error("image repository query param missing from request")
+		http.NotFound(w, r)
+		return
+	}
+	imageTag := q.Get("tag")
+	if imageTag == "" {
+		log.Logger.Error("image tag query param missing from request")
 		http.NotFound(w, r)
 		return
 	}
@@ -170,6 +179,10 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		log.Logger.Error("image digest query param missing from request")
 		http.NotFound(w, r)
 		return
+	}
+	imageRegistry := q.Get("registry")
+	if imageRegistry == "" {
+		imageRegistry = "index.docker.io"
 	}
 	severity := q.Get("severity")
 	resources := q.Get("resources")
@@ -184,6 +197,16 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	showIgnored := q.Get("showignored")
+	var showIgnoredBool bool
+	if showIgnored != "" {
+		var err error
+		showIgnoredBool, err = strconv.ParseBool(showIgnored)
+		if err != nil {
+			log.Logger.Warn("could not parse showignored query parameter to bool type, ignoring filter", "raw", showIgnored, "error", err.Error())
+		}
+	}
+
 	// Get vulnerability reports
 	reports, err := kube.GetVulnerabilityReportList()
 	if err != nil {
@@ -191,14 +214,25 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get ignored CVEs from database
+	ignoredCVEs, err := db.GetIgnoredCVEsForImage(imageRegistry, imageRepository, imageTag)
+	if err != nil {
+		log.Logger.Error("error getting ignored CVEs", "error", err.Error())
+		// Continue without ignored CVEs rather than failing the request
+		ignoredCVEs = nil
+	}
+
+	imageName := utils.AssembleImageFullName(utils.FormatPrettyImageRegistry(imageRegistry), utils.FormatPrettyImageRepo(imageRepository), imageTag)
+
 	// Get image view from reports
 	view, found := imageview.GetView(reports, imageview.Filters{
-		Name:      imageName,
-		Digest:    imageDigest,
-		Severity:  severity,
-		HasFix:    hasFixBool,
-		Resources: strings.Split(resources, ","),
-	})
+		Name:        imageName,
+		Digest:      imageDigest,
+		Severity:    severity,
+		HasFix:      hasFixBool,
+		ShowIgnored: showIgnoredBool,
+		Resources:   strings.Split(resources, ","),
+	}, ignoredCVEs)
 
 	// If the selected image from query params was not found, 404
 	if !found {
@@ -223,6 +257,58 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
 		return
 	}
+}
+
+func ignoreHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost && r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse JSON request body for unignore
+	var requestData db.IgnoredImageVulnerability
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+		log.Logger.Error("Failed to decode unignore request", "error", err)
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	// Validate always required fields
+	if requestData.Repository == "" || requestData.Tag == "" || requestData.CVEID == "" {
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return
+	}
+
+	// Set default registry for Docker Hub if empty
+	if requestData.Registry == "" {
+		requestData.Registry = "index.docker.io"
+	}
+
+	// Handle both POST (ignore) and DELETE (unignore) requests
+	if r.Method == http.MethodPost {
+		// Validate additional required fields
+		if requestData.Reason == "" {
+			http.Error(w, "Missing required fields", http.StatusBadRequest)
+			return
+		}
+
+		// Insert into database
+		if err := db.InsertIgnoredImageVulnerability(requestData); err != nil {
+			log.Logger.Error("Failed to insert ignored vulnerability", "error", err)
+			http.Error(w, "Failed to save ignore request", http.StatusInternalServerError)
+			return
+		}
+
+	} else if r.Method == http.MethodDelete {
+		// Delete from database
+		if err := db.DeleteIgnoredImageVulnerability(requestData.Registry, requestData.Repository, requestData.Tag, requestData.CVEID); err != nil {
+			log.Logger.Error("Failed to delete ignored vulnerability", "error", err)
+			http.Error(w, "Failed to unignore CVE", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func rolesHandler(w http.ResponseWriter, r *http.Request) {

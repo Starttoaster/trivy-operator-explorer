@@ -2,6 +2,8 @@ package image
 
 import (
 	"fmt"
+	"github.com/starttoaster/trivy-operator-explorer/internal/db"
+	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 	"sort"
 	"strings"
 
@@ -14,14 +16,15 @@ type Filters struct {
 	Digest string
 
 	// optional filters
-	Severity  string
-	HasFix    bool
-	Resources []string
+	Severity    string
+	HasFix      bool
+	ShowIgnored bool
+	Resources   []string
 }
 
 // GetView converts some report data to the /image view
 // returns view data and "true" if the image was found in the report list
-func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters) (View, bool) {
+func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters, ignoredCVEs map[string]db.IgnoredImageVulnerability) (View, bool) {
 	for _, item := range data.Items {
 		// If this report is for the image in question, compile its data and return it
 		itemImageName := getImageNameFromLabels(item.Report.Registry.Server, item.Report.Artifact.Repository, item.Report.Artifact.Tag)
@@ -31,10 +34,12 @@ func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters) (View, boo
 
 		// Construct image data from this VulnerabilityReport
 		i := View{
-			Name:      itemImageName,
-			Digest:    item.Report.Artifact.Digest,
-			OSFamily:  string(item.Report.OS.Family),
-			OSVersion: item.Report.OS.Name,
+			Registry:   utils.FormatPrettyImageRegistry(item.Report.Registry.Server),
+			Repository: utils.FormatPrettyImageRepo(item.Report.Artifact.Repository),
+			Tag:        item.Report.Artifact.Tag,
+			Digest:     item.Report.Artifact.Digest,
+			OSFamily:   string(item.Report.OS.Family),
+			OSVersion:  item.Report.OS.Name,
 		}
 		if item.Report.OS.Eosl {
 			i.OSEndOfServiceLife = "true"
@@ -46,6 +51,16 @@ func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters) (View, boo
 			if v.Score != nil {
 				score = *v.Score
 			}
+			// Check if this CVE is ignored
+			isIgnored := false
+			ignoredReason := ""
+			if ignoredCVEs != nil {
+				if val, ok := ignoredCVEs[v.VulnerabilityID]; ok {
+					isIgnored = true
+					ignoredReason = val.Reason
+				}
+			}
+
 			vuln := Vulnerability{
 				ID:                v.VulnerabilityID,
 				Severity:          string(v.Severity),
@@ -55,12 +70,19 @@ func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters) (View, boo
 				Title:             v.Title,
 				VulnerableVersion: v.InstalledVersion,
 				FixedVersion:      v.FixedVersion,
+				IsIgnored:         isIgnored,
+				IgnoreReason:      ignoredReason,
 			}
 
 			// We need to check if the vulnerability is unique
 			// Seems rare, but Trivy Operator sometimes gives duplicate CVE data for an image
 			uniqueVuln := i.isUniqueVulnerability(vuln.ID)
 			if uniqueVuln {
+				// Skip vulnerability if it's ignored (unless showIgnored is true)
+				if !filters.ShowIgnored && isIgnored {
+					continue
+				}
+
 				// Skip vulnerability if any filters don't match
 				// Filter severity
 				if filters.Severity != "" && !strings.EqualFold(vuln.Severity, filters.Severity) {

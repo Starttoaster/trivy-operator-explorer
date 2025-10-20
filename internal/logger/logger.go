@@ -38,3 +38,9 @@ func parseLogLevel(level string) slog.Level {
 		return slog.LevelInfo
 	}
 }
+
+// Fatal is a shortcut for the error logger with a subsequent OS exit with the 1 status code
+func Fatal(msg string, args ...any) {
+	Logger.Error(msg, args...)
+	os.Exit(1)
+}
