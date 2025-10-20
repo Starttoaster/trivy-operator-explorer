@@ -96,9 +96,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const registry = button.dataset.registry;
             const repository = button.dataset.repository;
             const tag = button.dataset.tag;
+            const reason = button.dataset.reason;
             
             // Confirm unignore action
-            if (!confirm(`Are you sure you want to unignore CVE ${cveId}?`)) {
+            if (!confirm(`Are you sure you want to unignore ${cveId}?\nCurrently ignored for reason:\n${reason}`)) {
                 return;
             }
             

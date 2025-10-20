@@ -36,19 +36,19 @@ func InsertIgnoredImageVulnerability(vuln IgnoredImageVulnerability) error {
 }
 
 // GetIgnoredCVEsForImage returns a map of CVE IDs that are ignored for the given image
-func GetIgnoredCVEsForImage(registry, repository, tag string) (map[string]bool, error) {
-	query := `SELECT cve_id FROM ignoredImageVulnerabilities 
+func GetIgnoredCVEsForImage(registry, repository, tag string) (map[string]IgnoredImageVulnerability, error) {
+	query := `SELECT cve_id, reason FROM ignoredImageVulnerabilities 
 			  WHERE registry = ? AND repository = ? AND tag = ?`
 
-	var cveIDs []string
-	err := Client.Select(&cveIDs, query, registry, repository, tag)
+	var cves []IgnoredImageVulnerability
+	err := Client.Select(&cves, query, registry, repository, tag)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ignores: %w", err)
 	}
 
-	ignoredCVEs := make(map[string]bool)
-	for _, cveID := range cveIDs {
-		ignoredCVEs[cveID] = true
+	ignoredCVEs := make(map[string]IgnoredImageVulnerability)
+	for _, cve := range cves {
+		ignoredCVEs[cve.CVEID] = cve
 	}
 
 	log.Logger.Info("Found ignored CVEs for image", "registry", registry, "repository", repository, "tag", tag,

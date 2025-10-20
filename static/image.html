@@ -78,7 +78,8 @@
                             <a href="{{ $data.URL }}" class="{{ if $data.IsIgnored }}decoration-2 decoration-gray-400{{ end }}">
                                 <span class="ms-3">{{ $data.ID }}</span>
                                 {{ if $data.IsIgnored }}
-                                <span class="ml-2 bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full dark:bg-yellow-900 dark:text-yellow-300">
+                                <span class="ml-2 bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full dark:bg-yellow-900 dark:text-yellow-300 cursor-help" 
+                                      title="{{ if $data.IgnoreReason }}{{ $data.IgnoreReason }}{{ else }}No reason provided{{ end }}">
                                     IGNORED
                                 </span>
                                 {{ end }}
@@ -120,6 +121,7 @@
                                     data-registry="{{ $.Data.Registry }}"
                                     data-repository="{{ $.Data.Repository }}"
                                     data-tag="{{ $.Data.Tag }}"
+                                    data-reason="{{ $data.IgnoreReason }}"
                                     title="Unignore CVE"
                                 >
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -822,6 +822,10 @@ video {
   animation: spin 1s linear infinite;
 }
 
+.cursor-help {
+  cursor: help;
+}
+
 .cursor-pointer {
   cursor: pointer;
 }

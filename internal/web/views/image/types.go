@@ -35,4 +35,6 @@ type Vulnerability struct {
 	FixedVersion string
 	// Whether this CVE is ignored
 	IsIgnored bool
+	// Reason why this CVE is ignored (if applicable)
+	IgnoreReason string
 }
