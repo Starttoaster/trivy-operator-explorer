@@ -36,29 +36,6 @@ func InsertIgnoredImageVulnerability(vuln IgnoredImageVulnerability) error {
 	return nil
 }
 
-// LookupIgnoredImageVulnerabilities finds rows in the ignoredImageVulnerabilities table
-// that match the given registry, repository, and tag
-func LookupIgnoredImageVulnerabilities(registry, repository, tag string) ([]IgnoredImageVulnerability, error) {
-	var query string
-	var args []interface{}
-	query = `SELECT * FROM ignoredImageVulnerabilities 
-				 WHERE registry = ? AND repository = ? AND tag = ?`
-	args = []interface{}{registry, repository, tag}
-
-	var vulnerabilities []IgnoredImageVulnerability
-	err := Client.Select(&vulnerabilities, query, args...)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return []IgnoredImageVulnerability{}, nil
-		}
-		return nil, err
-	}
-
-	log.Logger.Info("Found ignored image vulnerabilities", "registry", registry, "repository", repository, "tag", tag,
-		"count", len(vulnerabilities))
-	return vulnerabilities, nil
-}
-
 // GetIgnoredCVEsForImage returns a map of CVE IDs that are ignored for the given image
 func GetIgnoredCVEsForImage(registry, repository, tag string) (map[string]bool, error) {
 	ignoredCVEs := make(map[string]bool)
