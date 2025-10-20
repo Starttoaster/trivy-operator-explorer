@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	// driver for sqlite3
 	_ "github.com/mattn/go-sqlite3"
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
 )
@@ -12,6 +13,7 @@ import (
 // Client is the sqlx database client
 var Client *sqlx.DB
 
+// Init inits the database client and ensures some initial database state
 func Init(path string) error {
 	dbPathNoTrailingSlash := strings.TrimSuffix(path, "/")
 	dbClient, err := sqlx.Connect("sqlite3", fmt.Sprintf("%s/trivy-explorer.sqlite", dbPathNoTrailingSlash))
