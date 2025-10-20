@@ -113,7 +113,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Get form data
             const formData = new FormData(form);
             const reason = formData.get('reason');
-            const specificityLevel = parseInt(formData.get('specificity_level'));
             
             // Get button data attributes
             const cveId = button.dataset.cveId;
@@ -131,7 +130,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 tag: tag || '',
                 cve_id: cveId,
                 reason: reason,
-                specificity_level: specificityLevel
             };
             
             // Show loading state

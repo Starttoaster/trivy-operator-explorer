@@ -36,7 +36,7 @@ func initIgnoredImageVulnerabilitiesTable() error {
 		tag TEXT NOT NULL,
 		cve_id TEXT NOT NULL,
 		reason TEXT,
-		specificity_level INTEGER NOT NULL
+		UNIQUE(registry, repository, tag, cve_id)
 	);`)
 	if err != nil {
 		return err
