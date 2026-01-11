@@ -40,8 +40,26 @@ spec:
               value: '{{ .Values.config.log_level }}'
             - name: TRIVY_OPERATOR_EXPLORER_SERVER_PORT
               value: '{{ .Values.config.port }}'
+            - name: TRIVY_OPERATOR_EXPLORER_DB_PATH
+              value: '{{ .Values.database.mountPath }}'
+          volumeMounts:
+            - name: database
+              mountPath: {{ .Values.database.mountPath }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        {{- if .Values.database.persistentVolumeClaim.enabled }}
+        - name: database
+          persistentVolumeClaim:
+            {{- if .Values.database.persistentVolumeClaim.existingClaim }}
+            claimName: {{ .Values.database.persistentVolumeClaim.existingClaim }}
+            {{- else }}
+            claimName: {{ include "trivy-operator-explorer.fullname" . }}-database
+            {{- end }}
+        {{- else }}
+        - name: database
+          emptyDir: {}
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
