@@ -1,0 +1,21 @@
+{{- if and .Values.database.persistentVolumeClaim.enabled (not .Values.database.persistentVolumeClaim.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "trivy-operator-explorer.fullname" . }}-database
+  labels:
+    {{- include "trivy-operator-explorer.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.database.persistentVolumeClaim.accessMode }}
+  {{- if .Values.database.persistentVolumeClaim.storageClass }}
+  {{- if (eq "-" .Values.database.persistentVolumeClaim.storageClass) }}
+  storageClassName: ""
+  {{- else }}
+  storageClassName: {{ .Values.database.persistentVolumeClaim.storageClass }}
+  {{- end }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.database.persistentVolumeClaim.size }}
+{{- end }}
