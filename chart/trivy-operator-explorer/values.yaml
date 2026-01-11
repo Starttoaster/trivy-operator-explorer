@@ -21,6 +21,24 @@ config:
   # If you change this, change the service.port value too
   port: '8080'
 
+# Database volume configuration
+# By default, uses an emptyDir volume (ephemeral storage)
+# To use persistent storage, set persistentVolumeClaim.enabled to true
+database:
+  # Mount path for the database volume
+  mountPath: /trivy/db
+  # Use persistentVolumeClaim instead of emptyDir
+  persistentVolumeClaim:
+    enabled: false
+    # Name of the existing PVC to use (if not set, a new PVC will be created)
+    existingClaim: ""
+    # Storage class for the PVC (if creating a new one)
+    storageClass: ""
+    # Size of the PVC (if creating a new one)
+    size: 1Gi
+    # Access mode for the PVC
+    accessMode: ReadWriteOnce
+
 serviceAccount:
   # Specifies whether a service account should be created
   create: true
@@ -86,21 +104,3 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
-
-# Database volume configuration
-# By default, uses an emptyDir volume (ephemeral storage)
-# To use persistent storage, set persistentVolumeClaim.enabled to true
-database:
-  # Mount path for the database volume
-  mountPath: /trivy/db
-  # Use persistentVolumeClaim instead of emptyDir
-  persistentVolumeClaim:
-    enabled: false
-    # Name of the existing PVC to use (if not set, a new PVC will be created)
-    existingClaim: ""
-    # Storage class for the PVC (if creating a new one)
-    storageClass: ""
-    # Size of the PVC (if creating a new one)
-    size: 1Gi
-    # Access mode for the PVC
-    accessMode: ReadWriteOnce
