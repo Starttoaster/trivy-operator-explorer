@@ -6,6 +6,10 @@ metadata:
     {{- include "trivy-operator-explorer.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  {{- if .Values.database.persistentVolumeClaim.enabled }}
+  strategy:
+    type: Recreate
+  {{- end }}
   selector:
     matchLabels:
       {{- include "trivy-operator-explorer.selectorLabels" . | nindent 6 }}
