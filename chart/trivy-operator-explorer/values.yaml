@@ -33,17 +33,10 @@ serviceAccount:
 podAnnotations: {}
 
 podSecurityContext:
-  capabilities:
-    drop:
-      - ALL
-    add:
-      - NET_BIND_SERVICE
   runAsUser: 10001
   runAsGroup: 30000
   fsGroup: 2000
   runAsNonRoot: true
-  allowPrivilegeEscalation: false
-  readOnlyRootFilesystem: true
 
 securityContext:
   capabilities:
@@ -53,7 +46,6 @@ securityContext:
       - NET_BIND_SERVICE
   runAsUser: 10001
   runAsGroup: 30000
-  fsGroup: 2000
   runAsNonRoot: true
   allowPrivilegeEscalation: false
   readOnlyRootFilesystem: true
