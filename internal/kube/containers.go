@@ -44,53 +44,62 @@ func GetContainerImagesMap() (map[string]ContainerImage, error) {
 
 		// Process each container
 		for _, container := range allContainers {
-			imageName, imageTag := parseImageReference(container.Image)
+			imageName, imageTag, err := parseImageReference(container.Image)
+			if err != nil {
+				return nil, err
+			}
+			if imageName == "" || imageTag == "" {
+				continue
+			}
 
 			// Create unique key from name, tag, and digest
 			key := fmt.Sprintf("%s:%s", imageName, imageTag)
 
 			// Check if image is already in map
+			meta := getImageResourceMetadata(pod)
 			if _, ok := imageMap[key]; !ok {
-				resMap := make(map[ResourceMetadata]struct{})
-				for _, res := range getImageResourceMetadata(pod) {
-					resMap[res] = struct{}{}
-				}
 				imageMap[key] = ContainerImage{
 					Name:      imageName,
 					Tag:       imageTag,
-					Resources: resMap,
+					Resources: meta,
 				}
 			} else {
-				for _, res := range getImageResourceMetadata(pod) {
-					imageMap[key].Resources[res] = struct{}{}
+				existingResourceMap := imageMap[key].Resources
+				newResourceMap := make(map[ResourceMetadata]struct{}, 1)
+				for k, v := range existingResourceMap {
+					newResourceMap[k] = v
+				}
+				for k, v := range meta {
+					newResourceMap[k] = v
+				}
+
+				imageMap[key] = ContainerImage{
+					Name:      imageName,
+					Tag:       imageTag,
+					Resources: newResourceMap,
 				}
 			}
 		}
 	}
-
 	return imageMap, nil
 }
 
-func getImageResourceMetadata(pod corev1.Pod) []ResourceMetadata {
-	resList := make([]ResourceMetadata, 0)
+func getImageResourceMetadata(pod corev1.Pod) map[ResourceMetadata]struct{} {
+	resList := make(map[ResourceMetadata]struct{}, 1)
 
 	// If no owner references, just return this Pod
 	if len(pod.OwnerReferences) == 0 {
-		resList = append(resList, ResourceMetadata{
-			Kind:      "Pod",
-			Name:      pod.Name,
-			Namespace: pod.Namespace,
-		})
+		resList[ResourceMetadata{Kind: "Pod", Name: pod.Name, Namespace: pod.Namespace}] = struct{}{}
 		return resList
 	}
 
 	// If owner references found, put each in the resource meta list
 	for _, owner := range pod.OwnerReferences {
-		resList = append(resList, ResourceMetadata{
+		resList[ResourceMetadata{
 			Kind:      owner.Kind,
 			Name:      owner.Name,
 			Namespace: pod.Namespace,
-		})
+		}] = struct{}{}
 	}
 	return resList
 }
@@ -111,12 +120,58 @@ func GetContainerImages() ([]ContainerImage, error) {
 	return images, nil
 }
 
-// parseImageReference splits an image reference into name and tag
-func parseImageReference(image string) (string, string) {
-	// Image strings can come in two varieties:
-	// $registry/$name:$tag or $registry/$name:$tag@sha256:$hash
+// ParseImageRef splits a docker-ish image reference into:
+//   - repo: "$registry/$name" (or just "$name" if no registry was included)
+//   - suffix:
+//   - "tag" for "$repo:$tag" and "$repo:$tag@sha256:..."
+//   - "sha256:..." for "$repo@sha256:..."
+//   - "" if neither tag nor digest is present
+//
+// Images can come in the following formats
+//   - $registry/$name:$tag
+//   - $registry/$name:$tag@sha256:$hash
+//   - $registry/$name@sha256:$hash
+func parseImageReference(s string) (string, string, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return "", "", fmt.Errorf("empty image reference")
+	}
 
-	splitWithDigest := strings.Split(image, "@")
-	splitWithTag := strings.Split(splitWithDigest[0], ":")
-	return strings.TrimPrefix(splitWithTag[0], "docker.io/"), splitWithTag[1]
+	// Split off digest if present: "...@sha256:..."
+	var beforeDigest, digest string
+	if at := strings.IndexByte(s, '@'); at >= 0 {
+		beforeDigest = s[:at]
+		digest = s[at+1:] // everything after '@'
+	} else {
+		beforeDigest = s
+	}
+
+	var repo string
+
+	// Find a tag separator in beforeDigest. We must ignore ':' that are part of
+	// a registry host:port, so we only treat ':' occurring AFTER the last '/' as a tag.
+	lastSlash := strings.LastIndexByte(beforeDigest, '/')
+	tagSep := strings.LastIndexByte(beforeDigest, ':')
+	hasTag := tagSep > lastSlash
+
+	if hasTag {
+		repo = beforeDigest[:tagSep]
+		tag := beforeDigest[tagSep+1:]
+		if tag == "" {
+			return "", "", fmt.Errorf("invalid image reference: empty tag")
+		}
+		// If it was "$repo:$tag@sha256:..." we only want the tag
+		return strings.TrimPrefix(repo, "docker.io/"), tag, nil
+	}
+
+	// No tag in beforeDigest, so repo is the whole thing before '@' (or entire string)
+	repo = beforeDigest
+
+	// If it was "$repo@sha256:..." we want everything after '@'
+	if digest != "" {
+		return strings.TrimPrefix(repo, "docker.io/"), digest, nil
+	}
+
+	// No tag, no digest.
+	return "", "", nil
 }
