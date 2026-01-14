@@ -1,4 +1,195 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Bulk selection state
+    let selectedCVEs = new Set();
+    
+    // Initialize bulk action bar state
+    updateBulkActionBar();
+    
+    // Update bulk action bar visibility and count
+    function updateBulkActionBar() {
+        const bulkActionBar = document.getElementById('bulk-action-bar');
+        const countElement = document.getElementById('bulk-selection-count');
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        
+        if (selectedCVEs.size > 0) {
+            bulkActionBar.classList.remove('hidden');
+            countElement.textContent = `${selectedCVEs.size} selected`;
+        } else {
+            bulkActionBar.classList.add('hidden');
+        }
+        
+        // Update select all checkbox state
+        const allCheckboxes = document.querySelectorAll('.cve-checkbox:not(:disabled)');
+        if (selectAllCheckbox) {
+            if (allCheckboxes.length > 0) {
+                const checkedCount = document.querySelectorAll('.cve-checkbox:checked').length;
+                selectAllCheckbox.checked = checkedCount === allCheckboxes.length;
+                selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < allCheckboxes.length;
+                selectAllCheckbox.disabled = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+                selectAllCheckbox.disabled = true;
+            }
+        }
+    }
+    
+    // Handle individual checkbox changes
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('cve-checkbox')) {
+            const checkbox = e.target;
+            const cveId = checkbox.dataset.cveId;
+            
+            if (checkbox.checked) {
+                selectedCVEs.add(cveId);
+            } else {
+                selectedCVEs.delete(cveId);
+            }
+            
+            updateBulkActionBar();
+        }
+        
+        // Handle select all checkbox
+        if (e.target.id === 'select-all-checkbox') {
+            const selectAll = e.target.checked;
+            const checkboxes = document.querySelectorAll('.cve-checkbox:not(:disabled)');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll;
+                const cveId = checkbox.dataset.cveId;
+                if (selectAll) {
+                    selectedCVEs.add(cveId);
+                } else {
+                    selectedCVEs.delete(cveId);
+                }
+            });
+            
+            updateBulkActionBar();
+        }
+    });
+    
+    // Handle clear selection button
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'bulk-clear-selection-btn') {
+            selectedCVEs.clear();
+            document.querySelectorAll('.cve-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            const selectAllCheckbox = document.getElementById('select-all-checkbox');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            }
+            updateBulkActionBar();
+        }
+        
+        // Handle bulk ignore button click
+        if (e.target.id === 'bulk-ignore-btn') {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (selectedCVEs.size === 0) {
+                return;
+            }
+            
+            const modal = document.getElementById('bulk-ignore-modal');
+            const countElement = document.getElementById('bulk-cve-count');
+            countElement.textContent = selectedCVEs.size;
+            modal.classList.remove('hidden');
+        }
+        
+        // Handle bulk cancel button
+        if (e.target.id === 'bulk-cancel-btn') {
+            const modal = document.getElementById('bulk-ignore-modal');
+            modal.classList.add('hidden');
+            document.getElementById('bulk-ignore-form').reset();
+        }
+        
+        // Close bulk modal when clicking on backdrop (but not on modal content)
+        const modal = document.getElementById('bulk-ignore-modal');
+        if (e.target === modal) {
+            modal.classList.add('hidden');
+            document.getElementById('bulk-ignore-form').reset();
+        }
+    });
+    
+    // Handle bulk ignore form submission
+    document.addEventListener('submit', function(e) {
+        if (e.target.id === 'bulk-ignore-form') {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (selectedCVEs.size === 0) {
+                return;
+            }
+            
+            const form = e.target;
+            const formData = new FormData(form);
+            const reason = formData.get('reason');
+            
+            if (!reason || reason.trim() === '') {
+                showErrorMessage('Please provide a reason for ignoring these CVEs.');
+                return;
+            }
+            
+            // Get image info from first selected checkbox
+            const firstCheckbox = document.querySelector('.cve-checkbox:checked');
+            if (!firstCheckbox) {
+                return;
+            }
+            
+            const registry = firstCheckbox.dataset.registry || 'index.docker.io';
+            const repository = firstCheckbox.dataset.repository || '';
+            const tag = firstCheckbox.dataset.tag || '';
+            
+            // Prepare request data with array of CVE IDs
+            const requestData = {
+                registry: registry,
+                repository: repository,
+                tag: tag,
+                cve_ids: Array.from(selectedCVEs),
+                reason: reason,
+            };
+            
+            // Show loading state
+            const submitBtn = document.getElementById('bulk-submit-btn');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Ignoring...';
+            submitBtn.disabled = true;
+            
+            // Send request to server
+            fetch('/ignore/bulk', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Success - show success message and reload page
+                    showSuccessMessage(`${selectedCVEs.size} CVEs have been ignored successfully.`);
+                    
+                    // Reload page to refresh the view, preserving URL parameters
+                    setTimeout(() => {
+                        window.location.href = window.location.href;
+                    }, 1000);
+                } else {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error ignoring CVEs:', error);
+                showErrorMessage(`Failed to ignore CVEs. Please try again.`);
+            })
+            .finally(() => {
+                // Reset button state
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            });
+        }
+    });
+    
     // Handle ignore button clicks
     document.addEventListener('click', function(e) {
         if (e.target.closest('.ignore-btn')) {
@@ -251,7 +442,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Handle escape key to close dropdowns
+    // Handle escape key to close dropdowns and bulk modal
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             document.querySelectorAll('.ignore-dropdown').forEach(dropdown => {
@@ -262,6 +453,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const backdrop = document.getElementById('ignore-backdrop');
             if (backdrop) {
                 backdrop.remove();
+            }
+            
+            // Close bulk modal
+            const bulkModal = document.getElementById('bulk-ignore-modal');
+            if (bulkModal && !bulkModal.classList.contains('hidden')) {
+                bulkModal.classList.add('hidden');
+                document.getElementById('bulk-ignore-form').reset();
             }
         }
     });

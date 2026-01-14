@@ -36,6 +36,7 @@ func Start(port string) error {
 	mux.HandleFunc("/images", imagesHandler)
 	mux.HandleFunc("/image", imageHandler)
 	mux.HandleFunc("/ignore", ignoreHandler)
+	mux.HandleFunc("/ignore/bulk", bulkIgnoreHandler)
 	mux.HandleFunc("/configaudits", configauditsHandler)
 	mux.HandleFunc("/configaudit", configauditHandler)
 	mux.HandleFunc("/clusteraudits", clusterauditsHandler)
@@ -317,6 +318,51 @@ func ignoreHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to unignore CVE", http.StatusInternalServerError)
 			return
 		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// BulkIgnoreRequest represents a bulk ignore request
+type BulkIgnoreRequest struct {
+	Registry   string   `json:"registry"`
+	Repository string   `json:"repository"`
+	Tag        string   `json:"tag"`
+	CVEIDs     []string `json:"cve_ids"`
+	Reason     string   `json:"reason"`
+}
+
+func bulkIgnoreHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse JSON request body
+	var requestData BulkIgnoreRequest
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+		log.Logger.Error("Failed to decode bulk ignore request", "error", err)
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	// Validate required fields
+	if requestData.Repository == "" || requestData.Tag == "" || len(requestData.CVEIDs) == 0 || requestData.Reason == "" {
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return
+	}
+
+	// Set default registry for Docker Hub if empty
+	registry := requestData.Registry
+	if registry == "" {
+		registry = "index.docker.io"
+	}
+
+	// Insert into database using bulk insert
+	if err := db.BulkInsertIgnoredImageVulnerabilities(registry, requestData.Repository, requestData.Tag, requestData.Reason, requestData.CVEIDs); err != nil {
+		log.Logger.Error("Failed to bulk insert ignored vulnerabilities", "error", err)
+		http.Error(w, "Failed to save bulk ignore request", http.StatusInternalServerError)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)

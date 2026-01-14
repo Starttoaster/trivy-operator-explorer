@@ -40,12 +40,79 @@
         </div>
     </nav>
 
+    <!-- Bulk action bar (hidden by default) -->
+    <div id="bulk-action-bar" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-4 z-50 hidden">
+        <div class="flex items-center space-x-4">
+            <span id="bulk-selection-count" class="text-sm font-medium text-gray-700 dark:text-gray-300">0 selected</span>
+            <button 
+                id="bulk-ignore-btn"
+                type="button"
+                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-md transition-colors duration-200"
+            >
+                Ignore Selected
+            </button>
+            <button 
+                id="bulk-clear-selection-btn"
+                type="button"
+                class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-sm"
+            >
+                Clear Selection
+            </button>
+        </div>
+    </div>
+
+    <!-- Bulk ignore modal (hidden by default) -->
+    <div id="bulk-ignore-modal" class="fixed inset-0 bg-black bg-opacity-25 z-50 hidden flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-6 w-96 max-w-full mx-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Bulk Ignore Vulnerabilities</h3>
+            <form id="bulk-ignore-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Reason for ignoring (<span id="bulk-cve-count">0</span> CVEs)
+                    </label>
+                    <textarea 
+                        name="reason" 
+                        rows="4" 
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm"
+                        placeholder="Enter reason for ignoring these CVEs..."
+                        required
+                    ></textarea>
+                </div>
+                
+                <div class="flex justify-end space-x-2">
+                    <button 
+                        type="button" 
+                        id="bulk-cancel-btn"
+                        class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        type="submit" 
+                        id="bulk-submit-btn"
+                        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-md transition-colors duration-200"
+                    >
+                        Ignore CVEs
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Table content -->
     <div class="p-4 sm:ml-64 bg-gray-200 dark:bg-indigo-900">
         <div class="relative overflow-x-auto shadow-md rounded-lg">
             <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                 <thead class="rounded-lg text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                     <tr>
+                        <th scope="col" class="px-6 py-3 w-12">
+                            <input 
+                                type="checkbox" 
+                                id="select-all-checkbox"
+                                class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                title="Select all"
+                            >
+                        </th>
                         <th scope="col" class="px-6 py-3">
                             CVE
                         </th>
@@ -74,6 +141,18 @@
                 <tbody>
                     {{ range $data := .Data.Vulnerabilities }}
                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 {{ if $data.IsIgnored }}ignored-row{{ end }}">
+                        <td class="px-6 py-4">
+                            {{ if not $data.IsIgnored }}
+                            <input 
+                                type="checkbox" 
+                                class="cve-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                data-cve-id="{{ $data.ID }}"
+                                data-registry="{{ $.Data.Registry }}"
+                                data-repository="{{ $.Data.Repository }}"
+                                data-tag="{{ $.Data.Tag }}"
+                            >
+                            {{ end }}
+                        </td>
                         <th scope="row" class="px-6 py-4 font-medium whitespace-nowrap {{ if $data.IsIgnored }}text-gray-400 dark:text-gray-500{{ else }}text-black dark:text-white{{ end }}">
                             <a href="{{ $data.URL }}" class="{{ if $data.IsIgnored }}decoration-2 decoration-gray-400{{ end }}">
                                 <span class="ms-3">{{ $data.ID }}</span>
