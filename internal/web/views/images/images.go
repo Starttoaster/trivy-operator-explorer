@@ -1,18 +1,21 @@
 package images
 
 import (
-	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 	"sort"
 	"strings"
 
+	"github.com/starttoaster/trivy-operator-explorer/internal/db"
 	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
+	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
+	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
 )
 
 // Filters represents the available optional filters to the images view
 type Filters struct {
-	HasFix bool
+	HasFix      bool
+	ShowIgnored bool
 }
 
 // GetView converts some report data to the /images view
@@ -55,6 +58,18 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 		image.Resources = make(map[ResourceMetadata]struct{})
 		image.Resources[resourceData] = struct{}{}
 
+		// Get ignored CVEs from database (if 'show ignored' filter is false)
+		var ignoredCVEs map[string]db.IgnoredImageVulnerability
+		if !filters.ShowIgnored {
+			var err error
+			ignoredCVEs, err = db.GetIgnoredCVEsForImage(image.Registry, image.Name, image.Tag)
+			if err != nil {
+				log.Logger.Error("error getting ignored CVEs", "error", err.Error())
+				// Continue without ignored CVEs rather than failing the request
+				ignoredCVEs = nil
+			}
+		}
+
 		// Process all vulnerabilities from this vulnerability report
 		vMap := make(map[string]Vulnerability)
 		for _, v := range item.Report.Vulnerabilities {
@@ -63,6 +78,15 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 			if ok {
 				// Skip if we've already processed this vulnerability
 				continue
+			}
+
+			// Check if this CVE is ignored (if 'show ignored' filter is false)
+			if !filters.ShowIgnored {
+				if ignoredCVEs != nil {
+					if _, isIgnored := ignoredCVEs[v.VulnerabilityID]; isIgnored {
+						continue
+					}
+				}
 			}
 
 			// Construct this vulnerability's view data
