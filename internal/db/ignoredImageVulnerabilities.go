@@ -47,7 +47,11 @@ func BulkInsertIgnoredImageVulnerabilities(registry, repository, tag, reason str
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			// Do nothing, this happens commonly when the transaction has already been committed
+		}
+	}()
 
 	query := `INSERT INTO ignoredImageVulnerabilities (registry, repository, tag, cve_id, reason) 
 			  VALUES (?, ?, ?, ?, ?)`
@@ -56,7 +60,11 @@ func BulkInsertIgnoredImageVulnerabilities(registry, repository, tag, reason str
 	if err != nil {
 		return fmt.Errorf("failed to prepare statement: %w", err)
 	}
-	defer stmt.Close()
+	defer func() {
+		if err := stmt.Close(); err != nil {
+			log.Logger.Error("Failed to close statement", "error", err)
+		}
+	}()
 
 	// Insert each CVE
 	for _, cveID := range cveIDs {
