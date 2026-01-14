@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"strings"
 
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
 )
@@ -32,6 +33,58 @@ func InsertIgnoredImageVulnerability(vuln IgnoredImageVulnerability) error {
 	}
 
 	log.Logger.Info("Successfully inserted ignored image vulnerability", "id", id)
+	return nil
+}
+
+// BulkInsertIgnoredImageVulnerabilities inserts multiple ignored vulnerabilities in a transaction
+func BulkInsertIgnoredImageVulnerabilities(registry, repository, tag, reason string, cveIDs []string) error {
+	if len(cveIDs) == 0 {
+		return fmt.Errorf("no CVE IDs provided")
+	}
+
+	// Start a transaction
+	tx, err := Client.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			// Do nothing, this happens commonly when the transaction has already been committed
+		}
+	}()
+
+	query := `INSERT INTO ignoredImageVulnerabilities (registry, repository, tag, cve_id, reason) 
+			  VALUES (?, ?, ?, ?, ?)`
+
+	stmt, err := tx.Preparex(query)
+	if err != nil {
+		return fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer func() {
+		if err := stmt.Close(); err != nil {
+			log.Logger.Error("Failed to close statement", "error", err)
+		}
+	}()
+
+	// Insert each CVE
+	for _, cveID := range cveIDs {
+		_, err := stmt.Exec(registry, repository, tag, cveID, reason)
+		if err != nil {
+			// If it's a unique constraint violation, log and continue (idempotent)
+			if strings.Contains(err.Error(), "UNIQUE constraint") {
+				log.Logger.Debug("CVE already ignored, skipping", "cve_id", cveID, "registry", registry, "repository", repository, "tag", tag)
+				continue
+			}
+			return fmt.Errorf("failed to insert ignored vulnerability %s: %w", cveID, err)
+		}
+	}
+
+	// Commit the transaction
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	log.Logger.Info("Successfully bulk inserted ignored image vulnerabilities", "count", len(cveIDs), "registry", registry, "repository", repository, "tag", tag)
 	return nil
 }
 
