@@ -3,7 +3,6 @@ package web
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 	"html/template"
 	"net/http"
 	"strconv"
@@ -12,6 +11,7 @@ import (
 	"github.com/starttoaster/trivy-operator-explorer/internal/db"
 	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
+	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 	"github.com/starttoaster/trivy-operator-explorer/internal/web/content"
 	clusterauditview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusteraudit"
 	clusterauditsview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusteraudits"
@@ -118,6 +118,16 @@ func imagesHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	showIgnored := q.Get("showignored")
+	var showIgnoredBool bool
+	if showIgnored != "" {
+		var err error
+		showIgnoredBool, err = strconv.ParseBool(showIgnored)
+		if err != nil {
+			log.Logger.Warn("could not parse showignored query parameter to bool type, ignoring filter", "raw", showIgnored, "error", err.Error())
+		}
+	}
+
 	// Get vulnerability reports
 	data, err := kube.GetVulnerabilityReportList()
 	if err != nil {
@@ -131,7 +141,8 @@ func imagesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	imageData := imagesview.GetView(data, imagesMap, imagesview.Filters{
-		HasFix: hasFixBool,
+		HasFix:      hasFixBool,
+		ShowIgnored: showIgnoredBool,
 	})
 
 	// Add page type to template data

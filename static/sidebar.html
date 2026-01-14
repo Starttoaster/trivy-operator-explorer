@@ -65,7 +65,7 @@
                 </label>
             </div>
 
-            {{ if or (eq .PageRoute "image") }}
+            {{ if or (eq .PageRoute "image") (eq .PageRoute "images") }}
             <!-- Show Ignored CVEs Toggle -->
             <div class="flex items-center justify-between mt-3">
                 <span class="text-sm font-medium text-gray-900 dark:text-gray-300">Show ignored CVEs</span>

@@ -51,7 +51,7 @@ func GetIgnoredCVEsForImage(registry, repository, tag string) (map[string]Ignore
 		ignoredCVEs[cve.CVEID] = cve
 	}
 
-	log.Logger.Info("Found ignored CVEs for image", "registry", registry, "repository", repository, "tag", tag,
+	log.Logger.Debug("Found ignored CVEs for image", "registry", registry, "repository", repository, "tag", tag,
 		"count", len(ignoredCVEs))
 	return ignoredCVEs, nil
 }
