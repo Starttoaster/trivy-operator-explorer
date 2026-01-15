@@ -62,7 +62,7 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 		var ignoredCVEs map[string]db.IgnoredImageVulnerability
 		if !filters.ShowIgnored {
 			var err error
-			ignoredCVEs, err = db.GetIgnoredCVEsForImage(image.Registry, image.Name, image.Tag)
+			ignoredCVEs, err = db.GetIgnoredCVEsForImage(item.Report.Registry.Server, image.Name, image.Tag)
 			if err != nil {
 				log.Logger.Error("error getting ignored CVEs", "error", err.Error())
 				// Continue without ignored CVEs rather than failing the request
