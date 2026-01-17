@@ -181,11 +181,6 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	imageTag := q.Get("tag")
-	if imageTag == "" {
-		log.Logger.Error("image tag query param missing from request")
-		http.NotFound(w, r)
-		return
-	}
 	imageDigest := q.Get("digest")
 	if imageDigest == "" {
 		log.Logger.Error("image digest query param missing from request")
