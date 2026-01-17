@@ -46,7 +46,7 @@
                                     </svg>
                                 </button>
                                 <a href="/image?{{ if $data.Registry }}registry={{ $data.Registry }}{{ end }}&repository={{ $data.Name }}&tag={{ $data.Tag }}&digest={{ $data.Digest }}" title="{{ $data.Digest }}">
-                                    {{ if $data.Registry }}{{ $data.Registry }}/{{ end }}{{ $data.Name }}{{ if $data.Tag }}:{{ $data.Tag }}{{ end }}
+                                    {{ if $data.Registry }}{{ $data.Registry }}/{{ end }}{{ $data.Name }}{{ if $data.Tag }}:{{ $data.Tag }}{{ end }}{{ if and $data.Digest (not $data.Tag) }}@{{ $data.Digest }}{{ end }}
                                 </a>
                             </div>
                         </th>

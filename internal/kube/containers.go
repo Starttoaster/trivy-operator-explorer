@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -52,8 +53,20 @@ func GetContainerImagesMap() (map[string]ContainerImage, error) {
 				continue
 			}
 
+			// Figure out whether the tag is actually a digest
+			var imageDigest string
+			if strings.HasPrefix(imageTag, "sha256:") {
+				imageDigest = imageTag
+				imageTag = ""
+			}
+
 			// Create unique key from name, tag, and digest
-			key := fmt.Sprintf("%s:%s", imageName, imageTag)
+			key := utils.AssembleImageFullName(
+				"",
+				imageName,
+				imageTag,
+				imageDigest,
+			)
 
 			// Check if image is already in map
 			meta := getImageResourceMetadata(pod)
@@ -61,6 +74,7 @@ func GetContainerImagesMap() (map[string]ContainerImage, error) {
 				imageMap[key] = ContainerImage{
 					Name:      imageName,
 					Tag:       imageTag,
+					Digest:    imageDigest,
 					Resources: meta,
 				}
 			} else {
@@ -76,6 +90,7 @@ func GetContainerImagesMap() (map[string]ContainerImage, error) {
 				imageMap[key] = ContainerImage{
 					Name:      imageName,
 					Tag:       imageTag,
+					Digest:    imageDigest,
 					Resources: newResourceMap,
 				}
 			}

@@ -234,7 +234,12 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		ignoredCVEs = nil
 	}
 
-	imageName := utils.AssembleImageFullName(utils.FormatPrettyImageRegistry(imageRegistry), utils.FormatPrettyImageRepo(imageRepository), imageTag)
+	imageName := utils.AssembleImageFullName(
+		utils.FormatPrettyImageRegistry(imageRegistry),
+		utils.FormatPrettyImageRepo(imageRepository),
+		imageTag,
+		imageDigest,
+	)
 
 	// Get image view from reports
 	view, found := imageview.GetView(reports, imageview.Filters{
