@@ -3,8 +3,10 @@ package kube
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"strings"
 
+	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -52,19 +54,37 @@ func GetContainerImagesMap() (map[string]ContainerImage, error) {
 				continue
 			}
 
+			// Figure out whether the tag is actually a digest
+			var imageDigest string
+			if strings.HasPrefix(imageTag, "sha256:") {
+				imageDigest = imageTag
+				imageTag = ""
+			}
+
 			// Create unique key from name, tag, and digest
-			key := fmt.Sprintf("%s:%s", imageName, imageTag)
+			key := utils.AssembleImageFullName(
+				"",
+				imageName,
+				imageTag,
+				imageDigest,
+			)
 
 			// Check if image is already in map
 			meta := getImageResourceMetadata(pod)
-			if _, ok := imageMap[key]; !ok {
+			if val, ok := imageMap[key]; !ok {
+				// If no image digest found, generate a pseudo-random one for the resource dropdowns on the /images route
+				if imageDigest == "" {
+					imageDigest = fmt.Sprintf("%08x", rand.Uint32())
+				}
+
 				imageMap[key] = ContainerImage{
 					Name:      imageName,
 					Tag:       imageTag,
+					Digest:    imageDigest,
 					Resources: meta,
 				}
 			} else {
-				existingResourceMap := imageMap[key].Resources
+				existingResourceMap := val.Resources
 				newResourceMap := make(map[ResourceMetadata]struct{}, 1)
 				for k, v := range existingResourceMap {
 					newResourceMap[k] = v
@@ -74,8 +94,9 @@ func GetContainerImagesMap() (map[string]ContainerImage, error) {
 				}
 
 				imageMap[key] = ContainerImage{
-					Name:      imageName,
-					Tag:       imageTag,
+					Name:      val.Name,
+					Tag:       val.Tag,
+					Digest:    val.Digest,
 					Resources: newResourceMap,
 				}
 			}

@@ -20,9 +20,16 @@ func FormatPrettyImageRepo(repo string) string {
 }
 
 // AssembleImageFullName is a helper to combine an optional image registry, with a repository and tag
-func AssembleImageFullName(registry, repo, tag string) string {
-	if registry == "" {
-		return fmt.Sprintf("%s:%s", repo, tag)
+func AssembleImageFullName(registry, repo, tag, digest string) string {
+	var imageSuffix string
+	if tag != "" {
+		imageSuffix = fmt.Sprintf(":%s", tag)
+	} else if digest != "" {
+		imageSuffix = fmt.Sprintf("@%s", digest)
 	}
-	return fmt.Sprintf("%s/%s:%s", registry, repo, tag)
+
+	if registry == "" {
+		return fmt.Sprintf("%s%s", repo, imageSuffix)
+	}
+	return fmt.Sprintf("%s/%s%s", registry, repo, imageSuffix)
 }

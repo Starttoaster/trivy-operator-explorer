@@ -25,7 +25,12 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 	for _, item := range data.Items {
 		// Determine if this image is already in the map
 		// We add its resources to the current item in the map if it already exists
-		iMapKey := utils.AssembleImageFullName(utils.FormatPrettyImageRegistry(item.Report.Registry.Server), utils.FormatPrettyImageRepo(item.Report.Artifact.Repository), item.Report.Artifact.Tag)
+		iMapKey := utils.AssembleImageFullName(
+			utils.FormatPrettyImageRegistry(item.Report.Registry.Server),
+			utils.FormatPrettyImageRepo(item.Report.Artifact.Repository),
+			item.Report.Artifact.Tag,
+			item.Report.Artifact.Digest,
+		)
 		_, ok := iMap[iMapKey]
 		if ok {
 			resourceData := ResourceMetadata{
@@ -135,7 +140,13 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 	// We don't use the image digest to determine uniqueness because for some reason trivy-operator and kubernetes
 	// sometimes disagree on the image's digest
 	for k, v := range allClusterImagesMap {
-		if _, ok := iMap[k]; !ok {
+		iMapKey := utils.AssembleImageFullName(
+			"",
+			v.Name,
+			v.Tag,
+			v.Digest,
+		)
+		if _, ok := iMap[iMapKey]; !ok {
 			resourceData := make(map[ResourceMetadata]struct{})
 			for resource := range v.Resources {
 				r := ResourceMetadata{
@@ -146,10 +157,9 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 				resourceData[r] = struct{}{}
 			}
 			iMap[k] = Data{
-				Name: k,
-				// Hack: digest is used by the /images page for the dropdown button's id
-				// Should be a safe assumption that an unscanned image is unique by registry/name:tag instead of digest, so just using this here
-				Digest:    k,
+				Name:      v.Name,
+				Tag:       v.Tag,
+				Digest:    v.Digest,
 				Resources: resourceData,
 				Unscanned: true,
 			}

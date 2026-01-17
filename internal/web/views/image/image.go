@@ -1,11 +1,11 @@
 package image
 
 import (
-	"fmt"
-	"github.com/starttoaster/trivy-operator-explorer/internal/db"
-	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 	"sort"
 	"strings"
+
+	"github.com/starttoaster/trivy-operator-explorer/internal/db"
+	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
 )
@@ -27,7 +27,12 @@ type Filters struct {
 func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters, ignoredCVEs map[string]db.IgnoredImageVulnerability) (View, bool) {
 	for _, item := range data.Items {
 		// If this report is for the image in question, compile its data and return it
-		itemImageName := getImageNameFromLabels(item.Report.Registry.Server, item.Report.Artifact.Repository, item.Report.Artifact.Tag)
+		itemImageName := utils.AssembleImageFullName(
+			utils.FormatPrettyImageRegistry(item.Report.Registry.Server),
+			utils.FormatPrettyImageRepo(item.Report.Artifact.Repository),
+			item.Report.Artifact.Tag,
+			item.Report.Artifact.Digest,
+		)
 		if filters.Name != itemImageName || filters.Digest != item.Report.Artifact.Digest {
 			continue
 		}
@@ -127,15 +132,6 @@ func (i View) isUniqueVulnerability(cveID string) bool {
 	}
 
 	return true
-}
-
-func getImageNameFromLabels(registry, repo, tag string) string {
-	if registry == "index.docker.io" {
-		// If Docker Hub, trim the registry prefix for readability
-		// Also trims `library/` from the prefix of the image name, which is a hidden username for Docker Hub official images
-		return fmt.Sprintf("%s:%s", strings.TrimPrefix(repo, "library/"), tag)
-	}
-	return fmt.Sprintf("%s/%s:%s", registry, repo, tag)
 }
 
 func sortView(v View) View {

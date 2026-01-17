@@ -181,11 +181,6 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	imageTag := q.Get("tag")
-	if imageTag == "" {
-		log.Logger.Error("image tag query param missing from request")
-		http.NotFound(w, r)
-		return
-	}
 	imageDigest := q.Get("digest")
 	if imageDigest == "" {
 		log.Logger.Error("image digest query param missing from request")
@@ -234,7 +229,12 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		ignoredCVEs = nil
 	}
 
-	imageName := utils.AssembleImageFullName(utils.FormatPrettyImageRegistry(imageRegistry), utils.FormatPrettyImageRepo(imageRepository), imageTag)
+	imageName := utils.AssembleImageFullName(
+		utils.FormatPrettyImageRegistry(imageRegistry),
+		utils.FormatPrettyImageRepo(imageRepository),
+		imageTag,
+		imageDigest,
+	)
 
 	// Get image view from reports
 	view, found := imageview.GetView(reports, imageview.Filters{
