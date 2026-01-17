@@ -3,6 +3,7 @@ package kube
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"strings"
 
 	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
@@ -70,7 +71,12 @@ func GetContainerImagesMap() (map[string]ContainerImage, error) {
 
 			// Check if image is already in map
 			meta := getImageResourceMetadata(pod)
-			if _, ok := imageMap[key]; !ok {
+			if val, ok := imageMap[key]; !ok {
+				// If no image digest found, generate a pseudo-random one for the resource dropdowns on the /images route
+				if imageDigest == "" {
+					imageDigest = fmt.Sprintf("%08x", rand.Uint32())
+				}
+
 				imageMap[key] = ContainerImage{
 					Name:      imageName,
 					Tag:       imageTag,
@@ -78,7 +84,7 @@ func GetContainerImagesMap() (map[string]ContainerImage, error) {
 					Resources: meta,
 				}
 			} else {
-				existingResourceMap := imageMap[key].Resources
+				existingResourceMap := val.Resources
 				newResourceMap := make(map[ResourceMetadata]struct{}, 1)
 				for k, v := range existingResourceMap {
 					newResourceMap[k] = v
@@ -88,9 +94,9 @@ func GetContainerImagesMap() (map[string]ContainerImage, error) {
 				}
 
 				imageMap[key] = ContainerImage{
-					Name:      imageName,
-					Tag:       imageTag,
-					Digest:    imageDigest,
+					Name:      val.Name,
+					Tag:       val.Tag,
+					Digest:    val.Digest,
 					Resources: newResourceMap,
 				}
 			}
