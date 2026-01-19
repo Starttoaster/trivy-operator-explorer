@@ -102,14 +102,59 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.id === 'bulk-cancel-btn') {
             const modal = document.getElementById('bulk-ignore-modal');
             modal.classList.add('hidden');
-            document.getElementById('bulk-ignore-form').reset();
+            const form = document.getElementById('bulk-ignore-form');
+            form.reset();
+            // Clear the textarea requirement
+            const textarea = document.getElementById('bulk-reason-textarea');
+            textarea.removeAttribute('required');
+        }
+        
+        // Handle quick reason radio button changes
+        if (e.target.type === 'radio' && e.target.name === 'quick-reason') {
+            const textarea = document.getElementById('bulk-reason-textarea');
+            const currentValue = textarea.value.trim();
+            const selectedReason = e.target.value;
+            
+            // Check if the textarea already starts with this quick reason
+            if (currentValue.startsWith(selectedReason)) {
+                // Already has this quick reason, keep as-is
+            } else {
+                // Check if textarea starts with any other quick reason
+                const quickReasons = ['Risk is tolerable', 'This alert is inaccurate', 'Vulnerable code is not used'];
+                let customText = currentValue;
+                
+                // Remove any existing quick reason prefix
+                for (const qr of quickReasons) {
+                    if (currentValue.startsWith(qr)) {
+                        // Extract custom text after the quick reason
+                        const afterQuickReason = currentValue.substring(qr.length).trim();
+                        // Remove leading period and space if present
+                        customText = afterQuickReason.replace(/^\.\s*/, '').trim();
+                        break;
+                    }
+                }
+                
+                // Set textarea with new quick reason
+                if (customText) {
+                    textarea.value = selectedReason + '. ' + customText;
+                } else {
+                    textarea.value = selectedReason + '.';
+                }
+            }
+            
+            // Remove required attribute since we have a quick reason
+            textarea.removeAttribute('required');
         }
         
         // Close bulk modal when clicking on backdrop (but not on modal content)
         const modal = document.getElementById('bulk-ignore-modal');
         if (e.target === modal) {
             modal.classList.add('hidden');
-            document.getElementById('bulk-ignore-form').reset();
+            const form = document.getElementById('bulk-ignore-form');
+            form.reset();
+            // Clear the textarea requirement
+            const textarea = document.getElementById('bulk-reason-textarea');
+            textarea.removeAttribute('required');
         }
     });
     
@@ -125,7 +170,28 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const form = e.target;
             const formData = new FormData(form);
-            const reason = formData.get('reason');
+            
+            // Get quick reason selection and textarea value
+            const quickReason = formData.get('quick-reason');
+            const textareaValue = (formData.get('reason') || '').trim();
+            
+            // Build the final reason
+            let reason = '';
+            if (quickReason) {
+                // If textarea already starts with the quick reason, use it as-is
+                // Otherwise, prepend the quick reason
+                if (textareaValue.startsWith(quickReason)) {
+                    reason = textareaValue;
+                } else {
+                    reason = quickReason + '.';
+                    if (textareaValue) {
+                        reason += ' ' + textareaValue;
+                    }
+                }
+            } else {
+                // No quick reason selected, use textarea value (required)
+                reason = textareaValue;
+            }
             
             if (!reason || reason.trim() === '') {
                 showErrorMessage('Please provide a reason for ignoring these CVEs.');
@@ -148,7 +214,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 repository: repository,
                 tag: tag,
                 cve_ids: Array.from(selectedCVEs),
-                reason: reason,
+                reason: reason.trim(),
             };
             
             // Show loading state
@@ -264,10 +330,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const bulkModal = document.getElementById('bulk-ignore-modal');
             if (bulkModal && !bulkModal.classList.contains('hidden')) {
                 bulkModal.classList.add('hidden');
-                document.getElementById('bulk-ignore-form').reset();
+                const form = document.getElementById('bulk-ignore-form');
+                form.reset();
+                // Clear the textarea requirement
+                const textarea = document.getElementById('bulk-reason-textarea');
+                textarea.removeAttribute('required');
             }
         }
     });
+    
 });
 
 // Helper functions for showing messages

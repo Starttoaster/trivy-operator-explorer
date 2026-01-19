@@ -1,8 +1,11 @@
 // Get all unique resources from the table
 function getUniqueResources() {
     const resources = new Set();
-    document.querySelectorAll('td:nth-child(4)').forEach(cell => {
-        resources.add(cell.textContent.trim());
+    document.querySelectorAll('tbody tr td:nth-child(5)').forEach(cell => {
+        const resource = cell.textContent.trim();
+        if (resource) {
+            resources.add(resource);
+        }
     });
     return Array.from(resources).sort();
 }
