@@ -64,13 +64,9 @@
     <!-- Bulk ignore modal (hidden by default) -->
     <div id="bulk-ignore-modal" class="fixed inset-0 bg-black bg-opacity-25 z-50 hidden flex items-center justify-center">
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-6 w-96 max-w-full mx-4">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Bulk Ignore Vulnerabilities</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Reason for ignoring (<span id="bulk-cve-count">0</span> CVEs)</h3>
             <form id="bulk-ignore-form" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Reason for ignoring (<span id="bulk-cve-count">0</span> CVEs)
-                    </label>
-                    
                     <!-- Quick select options -->
                     <div class="space-y-2 mb-3">
                         <label class="flex items-center cursor-pointer">
