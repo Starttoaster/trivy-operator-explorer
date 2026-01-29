@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/starttoaster/trivy-operator-explorer/internal/db"
 	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
+	"github.com/starttoaster/trivy-operator-explorer/internal/snapshot"
 	"github.com/starttoaster/trivy-operator-explorer/internal/web"
 )
 
@@ -41,6 +42,7 @@ var rootCmd = &cobra.Command{
 		if viper.GetString("server-port") == "" {
 			slogs.Logr.Fatal("server port flag not set. Should be 8080 by default. This likely means it was overridden by user input with no value.")
 		}
+		snapshot.Start()
 		cobra.CheckErr(web.Start(viper.GetString("server-port")))
 	},
 }
