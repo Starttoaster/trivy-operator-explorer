@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
+	"github.com/chia-network/go-modules/pkg/slogs"
 )
 
 // IgnoredImageVulnerability represents a row in the ignoredImageVulnerabilities table
@@ -32,7 +32,7 @@ func InsertIgnoredImageVulnerability(vuln IgnoredImageVulnerability) error {
 		return fmt.Errorf("failed to get last insert ID: %w", err)
 	}
 
-	log.Logger.Info("Successfully inserted ignored image vulnerability", "id", id)
+	slogs.Logr.Info("Successfully inserted ignored image vulnerability", "id", id)
 	return nil
 }
 
@@ -62,7 +62,7 @@ func BulkInsertIgnoredImageVulnerabilities(registry, repository, tag, reason str
 	}
 	defer func() {
 		if err := stmt.Close(); err != nil {
-			log.Logger.Error("Failed to close statement", "error", err)
+			slogs.Logr.Error("Failed to close statement", "error", err)
 		}
 	}()
 
@@ -72,7 +72,7 @@ func BulkInsertIgnoredImageVulnerabilities(registry, repository, tag, reason str
 		if err != nil {
 			// If it's a unique constraint violation, log and continue (idempotent)
 			if strings.Contains(err.Error(), "UNIQUE constraint") {
-				log.Logger.Debug("CVE already ignored, skipping", "cve_id", cveID, "registry", registry, "repository", repository, "tag", tag)
+				slogs.Logr.Debug("CVE already ignored, skipping", "cve_id", cveID, "registry", registry, "repository", repository, "tag", tag)
 				continue
 			}
 			return fmt.Errorf("failed to insert ignored vulnerability %s: %w", cveID, err)
@@ -84,7 +84,7 @@ func BulkInsertIgnoredImageVulnerabilities(registry, repository, tag, reason str
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	log.Logger.Info("Successfully bulk inserted ignored image vulnerabilities", "count", len(cveIDs), "registry", registry, "repository", repository, "tag", tag)
+	slogs.Logr.Info("Successfully bulk inserted ignored image vulnerabilities", "count", len(cveIDs), "registry", registry, "repository", repository, "tag", tag)
 	return nil
 }
 
@@ -104,7 +104,7 @@ func GetIgnoredCVEsForImage(registry, repository, tag string) (map[string]Ignore
 		ignoredCVEs[cve.CVEID] = cve
 	}
 
-	log.Logger.Debug("Found ignored CVEs for image", "registry", registry, "repository", repository, "tag", tag,
+	slogs.Logr.Debug("Found ignored CVEs for image", "registry", registry, "repository", repository, "tag", tag,
 		"count", len(ignoredCVEs))
 	return ignoredCVEs, nil
 }
@@ -128,6 +128,6 @@ func DeleteIgnoredImageVulnerability(registry, repository, tag, cveID string) er
 		return fmt.Errorf("no ignored vulnerability found to delete")
 	}
 
-	log.Logger.Info("Successfully deleted ignored image vulnerability", "registry", registry, "repository", repository, "tag", tag, "cve_id", cveID)
+	slogs.Logr.Info("Successfully deleted ignored image vulnerability", "registry", registry, "repository", repository, "tag", tag, "cve_id", cveID)
 	return nil
 }

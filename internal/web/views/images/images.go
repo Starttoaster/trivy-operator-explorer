@@ -4,9 +4,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/chia-network/go-modules/pkg/slogs"
 	"github.com/starttoaster/trivy-operator-explorer/internal/db"
 	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
-	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
 	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
@@ -69,7 +69,7 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 			var err error
 			ignoredCVEs, err = db.GetIgnoredCVEsForImage(item.Report.Registry.Server, image.Name, image.Tag)
 			if err != nil {
-				log.Logger.Error("error getting ignored CVEs", "error", err.Error())
+				slogs.Logr.Error("error getting ignored CVEs", "error", err.Error())
 				// Continue without ignored CVEs rather than failing the request
 				ignoredCVEs = nil
 			}

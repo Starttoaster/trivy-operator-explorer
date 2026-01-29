@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/chia-network/go-modules/pkg/slogs"
 	"github.com/jmoiron/sqlx"
 	// driver for sqlite3
 	_ "github.com/mattn/go-sqlite3"
-	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
 )
 
 // Client is the sqlx database client
@@ -49,7 +49,7 @@ func initIgnoredImageVulnerabilitiesTable() error {
 		return err
 	}
 
-	log.Logger.Info("✓ ignoredImageVulnerabilities table created/verified")
+	slogs.Logr.Info("✓ ignoredImageVulnerabilities table created/verified")
 	return nil
 }
 
@@ -72,6 +72,6 @@ func initImageVulnerabilityCountTimeseriesTable() error {
 		return err
 	}
 
-	log.Logger.Info("✓ imageVulnerabilityCountTimeseries table created/verified")
+	slogs.Logr.Info("✓ imageVulnerabilityCountTimeseries table created/verified")
 	return nil
 }

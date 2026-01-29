@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/aquasecurity/trivy-operator v0.29.0
+	github.com/chia-network/go-modules v0.1.2-0.20260128223240-d33c2965a037
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/mattn/go-sqlite3 v1.14.33
 	github.com/spf13/cobra v1.10.2
@@ -67,7 +68,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/term v0.37.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
