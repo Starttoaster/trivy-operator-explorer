@@ -27,6 +27,11 @@ func Init(path string) error {
 		return err
 	}
 
+	err = initImageVulnerabilityCountTimeseriesTable()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -45,5 +50,28 @@ func initIgnoredImageVulnerabilitiesTable() error {
 	}
 
 	log.Logger.Info("✓ ignoredImageVulnerabilities table created/verified")
+	return nil
+}
+
+func initImageVulnerabilityCountTimeseriesTable() error {
+	_, err := Client.Exec(`CREATE TABLE IF NOT EXISTS imageVulnerabilityCountTimeseries (
+		id INTEGER PRIMARY KEY,
+		time TEXT NOT NULL,
+		critical INTEGER,
+		high INTEGER,
+		medium INTEGER,
+		low INTEGER,
+		unknown INTEGER
+	);`)
+	if err != nil {
+		return err
+	}
+
+	_, err = Client.Exec(`CREATE INDEX IF NOT EXISTS idx_imageVulnerabilityCountTimeseries_time ON imageVulnerabilityCountTimeseries(time)`)
+	if err != nil {
+		return err
+	}
+
+	log.Logger.Info("✓ imageVulnerabilityCountTimeseries table created/verified")
 	return nil
 }
