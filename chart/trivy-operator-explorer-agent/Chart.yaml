@@ -1,0 +1,6 @@
+apiVersion: v2
+name: trivy-operator-explorer-agent
+description: Per-cluster agent that watches trivy-operator CRDs and syncs to the central API
+type: application
+version: 0.1.0
+appVersion: "2.0.0"

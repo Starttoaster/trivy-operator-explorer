@@ -1,0 +1,57 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/starttoaster/trivy-operator-explorer-agent
+  pullPolicy: IfNotPresent
+  tag: ""
+
+clusterName: ""
+
+api:
+  url: ""
+
+syncInterval: "5m"
+
+tls:
+  # Secret containing ca.crt, tls.crt, tls.key for mTLS client auth
+  secretName: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+config:
+  logLevel: "info"
+
+podAnnotations: {}
+
+podSecurityContext:
+  runAsUser: 10001
+  runAsGroup: 30000
+  fsGroup: 2000
+  runAsNonRoot: true
+
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
