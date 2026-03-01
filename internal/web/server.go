@@ -82,6 +82,24 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	// Get index view
 	indexData := indexview.GetView(imagesView, complianceView)
 
+	// Get vulnerability count history for the over-time chart
+	counts, err := db.GetVulnerabilityCounts(nil)
+	if err != nil {
+		slogs.Logr.Error("error getting vulnerability count history", "error", err.Error())
+		// Continue with empty history rather than failing the page
+		counts = nil
+	}
+	for _, c := range counts {
+		indexData.VulnerabilityCountHistory = append(indexData.VulnerabilityCountHistory, indexview.VulnerabilityCountPoint{
+			Date:     c.DateTime.Format("2006-01-02"),
+			Critical: int(c.Critical),
+			High:     int(c.High),
+			Medium:   int(c.Medium),
+			Low:      int(c.Low),
+			Unknown:  int(c.Unknown),
+		})
+	}
+
 	err = tmpl.Execute(w, indexData)
 	if err != nil {
 		slogs.Logr.Error("encountered error executing index html template", "error", err)

@@ -22,6 +22,48 @@
                 </a>
             </div>
 
+            {{ if .VulnerabilityCountHistory }}
+            <div class="mt-8 w-full max-w-5xl mx-auto" style="height: 320px;">
+                <canvas id="vulnOverTimeChart"></canvas>
+            </div>
+            <script defer>
+                (function() {
+                    Chart.defaults.font.size = 16;
+                    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                        Chart.defaults.color = '#fff';
+                    } else {
+                        Chart.defaults.color = '#000';
+                    }
+                    var labels = [{{ range $i, $p := .VulnerabilityCountHistory }}{{ if $i }}, {{ end }}"{{ $p.Date }}"{{ end }}];
+                    new Chart(document.getElementById('vulnOverTimeChart'), {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                { label: 'Critical', data: [{{ range $i, $p := .VulnerabilityCountHistory }}{{ if $i }}, {{ end }}{{ $p.Critical }}{{ end }}], borderColor: 'rgba(220, 53, 69, 1)', backgroundColor: 'rgba(220, 53, 69, 0.1)', fill: true, tension: 0.2 },
+                    { label: 'High', data: [{{ range $i, $p := .VulnerabilityCountHistory }}{{ if $i }}, {{ end }}{{ $p.High }}{{ end }}], borderColor: 'rgba(255, 125, 20, 1)', backgroundColor: 'rgba(255, 125, 20, 0.1)', fill: true, tension: 0.2 },
+                    { label: 'Medium', data: [{{ range $i, $p := .VulnerabilityCountHistory }}{{ if $i }}, {{ end }}{{ $p.Medium }}{{ end }}], borderColor: 'rgba(255, 193, 7, 1)', backgroundColor: 'rgba(255, 193, 7, 0.1)', fill: true, tension: 0.2 },
+                    { label: 'Low', data: [{{ range $i, $p := .VulnerabilityCountHistory }}{{ if $i }}, {{ end }}{{ $p.Low }}{{ end }}], borderColor: 'rgba(13, 110, 253, 1)', backgroundColor: 'rgba(13, 110, 253, 0.1)', fill: true, tension: 0.2 }
+                ]
+                },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            title: { display: true, text: 'Vulnerabilities over time (daily snapshot)', font: { size: 18 } },
+                            legend: { position: 'bottom' }
+                        },
+                        scales: {
+                            x: { title: { display: true, text: 'Date' } },
+                            y: { beginAtZero: true, title: { display: true, text: 'Count' } }
+                        }
+                    }
+                });
+                })();
+            </script>
+            {{ end }}
+
             <div id="images-wrapper">
                 <div id="c1" style="width: 400px; height: 400px; margin: 0 auto;"><canvas id="vulnChart"></canvas></div>
                 <div id="c2" style="width: 400px; height: 400px; margin: 0 auto;"><canvas id="eoslChart"></canvas></div>
