@@ -28,9 +28,7 @@ func Start(cfg ServerConfig) error {
 	mux.HandleFunc("/api/v1/healthz", healthzHandler)
 
 	if cfg.CertFile == "" || cfg.KeyFile == "" || cfg.CAFile == "" {
-		log.Logger.Warn("TLS not fully configured, starting without mTLS")
-		log.Logger.Info("API server listening", "addr", cfg.ListenAddr)
-		return http.ListenAndServe(cfg.ListenAddr, mux)
+		return fmt.Errorf("TLS not fully configured: cert-file, key-file, and ca-file are all required")
 	}
 
 	caCert, err := os.ReadFile(cfg.CAFile)
