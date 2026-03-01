@@ -77,7 +77,7 @@ func (c *Client) Sync(report models.ClusterReport) error {
 	if err != nil {
 		return fmt.Errorf("posting sync request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("sync request returned status %d", resp.StatusCode)

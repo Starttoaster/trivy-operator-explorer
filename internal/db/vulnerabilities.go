@@ -48,7 +48,7 @@ func GetVulnerabilitiesForImage(imageID int) ([]VulnerabilityRow, error) {
 	return rows, err
 }
 
-// GetAllVulnerabilities returns all vulnerability rows joined with image info.
+// VulnerabilityWithImage is a vulnerability row joined with image info.
 type VulnerabilityWithImage struct {
 	VulnerabilityRow
 	Registry   string `db:"registry"`
