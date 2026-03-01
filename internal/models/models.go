@@ -3,14 +3,14 @@ package models
 // ClusterReport is the top-level payload an agent sends to the central API.
 // It contains all normalized trivy-operator data for a single cluster.
 type ClusterReport struct {
-	ClusterName            string                       `json:"cluster_name"`
-	Vulnerabilities        []VulnerabilityReport        `json:"vulnerabilities"`
-	ConfigAudits           []ConfigAuditReport          `json:"config_audits"`
-	ClusterInfraAudits     []ClusterInfraAuditReport    `json:"cluster_infra_audits"`
-	RbacAssessments        []RbacAssessmentReport       `json:"rbac_assessments"`
+	ClusterName            string                        `json:"cluster_name"`
+	Vulnerabilities        []VulnerabilityReport         `json:"vulnerabilities"`
+	ConfigAudits           []ConfigAuditReport           `json:"config_audits"`
+	ClusterInfraAudits     []ClusterInfraAuditReport     `json:"cluster_infra_audits"`
+	RbacAssessments        []RbacAssessmentReport        `json:"rbac_assessments"`
 	ClusterRbacAssessments []ClusterRbacAssessmentReport `json:"cluster_rbac_assessments"`
-	ExposedSecrets         []ExposedSecretReport        `json:"exposed_secrets"`
-	ComplianceReports      []ComplianceReport           `json:"compliance_reports"`
+	ExposedSecrets         []ExposedSecretReport         `json:"exposed_secrets"`
+	ComplianceReports      []ComplianceReport            `json:"compliance_reports"`
 }
 
 // VulnerabilityReport represents a single trivy-operator VulnerabilityReport,
@@ -60,9 +60,9 @@ type ConfigAuditCheck struct {
 
 // ClusterInfraAuditReport represents a trivy-operator ClusterInfraAssessmentReport.
 type ClusterInfraAuditReport struct {
-	Name   string                    `json:"name"`
-	Kind   string                    `json:"kind"`
-	Checks []ClusterInfraAuditCheck  `json:"checks"`
+	Name   string                   `json:"name"`
+	Kind   string                   `json:"kind"`
+	Checks []ClusterInfraAuditCheck `json:"checks"`
 }
 
 // ClusterInfraAuditCheck is a single finding within a ClusterInfraAuditReport.
@@ -126,21 +126,21 @@ type ExposedSecret struct {
 
 // ComplianceReport represents a trivy-operator ClusterComplianceReport.
 type ComplianceReport struct {
-	ReportID  string             `json:"report_id"`
-	Title     string             `json:"title"`
-	FailCount int                `json:"fail_count"`
-	PassCount int                `json:"pass_count"`
+	ReportID  string              `json:"report_id"`
+	Title     string              `json:"title"`
+	FailCount int                 `json:"fail_count"`
+	PassCount int                 `json:"pass_count"`
 	Controls  []ComplianceControl `json:"controls"`
 }
 
 // ComplianceControl is a single control within a ComplianceReport.
 type ComplianceControl struct {
-	IDNumber    string            `json:"id_number"`
+	IDNumber    string              `json:"id_number"`
 	CheckIDs    []ComplianceCheckID `json:"check_ids"`
-	Name        string            `json:"name"`
-	Description string            `json:"description"`
-	Severity    string            `json:"severity"`
-	TotalFailed *int              `json:"total_failed,omitempty"`
+	Name        string              `json:"name"`
+	Description string              `json:"description"`
+	Severity    string              `json:"severity"`
+	TotalFailed *int                `json:"total_failed,omitempty"`
 }
 
 // ComplianceCheckID is an individual check reference within a control.

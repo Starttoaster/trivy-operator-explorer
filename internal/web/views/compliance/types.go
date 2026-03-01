@@ -8,8 +8,8 @@ type Data struct {
 	ClusterName string
 	ID          string
 	Title       string
-	Summary Summary
-	Checks  []Check
+	Summary     Summary
+	Checks      []Check
 }
 
 // Summary contains the summary fail/pass count for a compliance report
