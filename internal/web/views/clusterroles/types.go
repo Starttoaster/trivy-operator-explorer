@@ -5,6 +5,7 @@ type View []Data
 
 // Data data about a role and its vulnerabilities
 type Data struct {
+	ClusterName             string
 	Name                    string
 	Kind                    string
 	CriticalVulnerabilities []Vulnerability

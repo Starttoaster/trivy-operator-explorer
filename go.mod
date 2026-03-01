@@ -5,7 +5,7 @@ go 1.25.7
 require (
 	github.com/aquasecurity/trivy-operator v0.30.0
 	github.com/jmoiron/sqlx v1.4.0
-	github.com/mattn/go-sqlite3 v1.14.34
+	github.com/lib/pq v1.10.9
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	k8s.io/api v0.35.1

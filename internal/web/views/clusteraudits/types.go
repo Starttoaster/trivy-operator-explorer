@@ -5,6 +5,7 @@ type View []Data
 
 // Data data about a cluster controllers and their vulnerabilities
 type Data struct {
+	ClusterName    string
 	Name           string
 	Kind           string
 	CriticalChecks []Check
