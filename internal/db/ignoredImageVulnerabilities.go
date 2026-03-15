@@ -7,7 +7,7 @@ import (
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
 )
 
-// IgnoredImageVulnerability represents a row in the ignoredImageVulnerabilities table
+// IgnoredImageVulnerability represents a row in the ignored_image_vulnerabilities table.
 type IgnoredImageVulnerability struct {
 	ID         int    `db:"id" json:"id"`
 	Registry   string `db:"registry" json:"registry"`
@@ -17,117 +17,98 @@ type IgnoredImageVulnerability struct {
 	Reason     string `db:"reason" json:"reason"`
 }
 
-// InsertIgnoredImageVulnerability inserts a new row into the ignoredImageVulnerabilities table
+// InsertIgnoredImageVulnerability inserts a new ignored vulnerability.
 func InsertIgnoredImageVulnerability(vuln IgnoredImageVulnerability) error {
-	query := `INSERT INTO ignoredImageVulnerabilities (registry, repository, tag, cve_id, reason) 
-			  VALUES (:registry, :repository, :tag, :cve_id, :reason)`
-
-	result, err := Client.NamedExec(query, vuln)
+	result, err := Client.Exec(
+		`INSERT INTO ignored_image_vulnerabilities (registry, repository, tag, cve_id, reason)
+		 VALUES ($1, $2, $3, $4, $5)
+		 ON CONFLICT DO NOTHING`,
+		vuln.Registry, vuln.Repository, vuln.Tag, vuln.CVEID, vuln.Reason,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to insert ignored image vulnerability: %w", err)
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return fmt.Errorf("failed to get last insert ID: %w", err)
-	}
-
-	log.Logger.Info("Successfully inserted ignored image vulnerability", "id", id)
+	rows, _ := result.RowsAffected()
+	log.Logger.Info("inserted ignored image vulnerability", "rows", rows)
 	return nil
 }
 
-// BulkInsertIgnoredImageVulnerabilities inserts multiple ignored vulnerabilities in a transaction
+// BulkInsertIgnoredImageVulnerabilities inserts multiple ignored vulnerabilities in a transaction.
 func BulkInsertIgnoredImageVulnerabilities(registry, repository, tag, reason string, cveIDs []string) error {
 	if len(cveIDs) == 0 {
 		return fmt.Errorf("no CVE IDs provided")
 	}
 
-	// Start a transaction
 	tx, err := Client.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer func() {
-		if err := tx.Rollback(); err != nil {
-			// Do nothing, this happens commonly when the transaction has already been committed
-		}
-	}()
+	defer func() { _ = tx.Rollback() }()
 
-	query := `INSERT INTO ignoredImageVulnerabilities (registry, repository, tag, cve_id, reason) 
-			  VALUES (?, ?, ?, ?, ?)`
-
-	stmt, err := tx.Preparex(query)
+	stmt, err := tx.Preparex(
+		`INSERT INTO ignored_image_vulnerabilities (registry, repository, tag, cve_id, reason)
+		 VALUES ($1, $2, $3, $4, $5)
+		 ON CONFLICT DO NOTHING`)
 	if err != nil {
 		return fmt.Errorf("failed to prepare statement: %w", err)
 	}
-	defer func() {
-		if err := stmt.Close(); err != nil {
-			log.Logger.Error("Failed to close statement", "error", err)
-		}
-	}()
+	defer func() { _ = stmt.Close() }()
 
-	// Insert each CVE
 	for _, cveID := range cveIDs {
-		_, err := stmt.Exec(registry, repository, tag, cveID, reason)
-		if err != nil {
-			// If it's a unique constraint violation, log and continue (idempotent)
-			if strings.Contains(err.Error(), "UNIQUE constraint") {
-				log.Logger.Debug("CVE already ignored, skipping", "cve_id", cveID, "registry", registry, "repository", repository, "tag", tag)
+		if _, err := stmt.Exec(registry, repository, tag, cveID, reason); err != nil {
+			if strings.Contains(err.Error(), "duplicate key") {
+				log.Logger.Debug("CVE already ignored, skipping", "cve_id", cveID)
 				continue
 			}
 			return fmt.Errorf("failed to insert ignored vulnerability %s: %w", cveID, err)
 		}
 	}
 
-	// Commit the transaction
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	log.Logger.Info("Successfully bulk inserted ignored image vulnerabilities", "count", len(cveIDs), "registry", registry, "repository", repository, "tag", tag)
+	log.Logger.Info("bulk inserted ignored image vulnerabilities", "count", len(cveIDs))
 	return nil
 }
 
-// GetIgnoredCVEsForImage returns a map of CVE IDs that are ignored for the given image
+// GetIgnoredCVEsForImage returns a map of CVE IDs that are ignored for the given image.
 func GetIgnoredCVEsForImage(registry, repository, tag string) (map[string]IgnoredImageVulnerability, error) {
-	query := `SELECT cve_id, reason FROM ignoredImageVulnerabilities 
-			  WHERE registry = ? AND repository = ? AND tag = ?`
-
 	var cves []IgnoredImageVulnerability
-	err := Client.Select(&cves, query, registry, repository, tag)
+	err := Client.Select(&cves,
+		`SELECT id, registry, repository, tag, cve_id, reason
+		 FROM ignored_image_vulnerabilities
+		 WHERE registry = $1 AND repository = $2 AND tag = $3`,
+		registry, repository, tag,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ignores: %w", err)
 	}
 
-	ignoredCVEs := make(map[string]IgnoredImageVulnerability)
+	ignoredCVEs := make(map[string]IgnoredImageVulnerability, len(cves))
 	for _, cve := range cves {
 		ignoredCVEs[cve.CVEID] = cve
 	}
-
-	log.Logger.Debug("Found ignored CVEs for image", "registry", registry, "repository", repository, "tag", tag,
-		"count", len(ignoredCVEs))
 	return ignoredCVEs, nil
 }
 
-// DeleteIgnoredImageVulnerability removes an ignored CVE from the database
+// DeleteIgnoredImageVulnerability removes an ignored CVE from the database.
 func DeleteIgnoredImageVulnerability(registry, repository, tag, cveID string) error {
-	query := `DELETE FROM ignoredImageVulnerabilities 
-			  WHERE registry = ? AND repository = ? AND tag = ? AND cve_id = ?`
-
-	result, err := Client.Exec(query, registry, repository, tag, cveID)
+	result, err := Client.Exec(
+		`DELETE FROM ignored_image_vulnerabilities
+		 WHERE registry = $1 AND repository = $2 AND tag = $3 AND cve_id = $4`,
+		registry, repository, tag, cveID,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to delete ignored image vulnerability: %w", err)
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
-	}
-
-	if rowsAffected == 0 {
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
 		return fmt.Errorf("no ignored vulnerability found to delete")
 	}
 
-	log.Logger.Info("Successfully deleted ignored image vulnerability", "registry", registry, "repository", repository, "tag", tag, "cve_id", cveID)
+	log.Logger.Info("deleted ignored image vulnerability", "cve_id", cveID)
 	return nil
 }

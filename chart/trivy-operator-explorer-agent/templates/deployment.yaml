@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "agent.fullname" . }}
+  labels:
+    {{- include "agent.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "agent.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "agent.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "agent.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: agent
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: TRIVY_AGENT_LOG_LEVEL
+              value: {{ .Values.config.logLevel | quote }}
+            - name: TRIVY_AGENT_CLUSTER_NAME
+              value: {{ required "clusterName is required" .Values.clusterName | quote }}
+            - name: TRIVY_AGENT_API_URL
+              value: {{ required "api.url is required" .Values.api.url | quote }}
+            - name: TRIVY_AGENT_SYNC_INTERVAL
+              value: {{ .Values.syncInterval | quote }}
+            {{- if .Values.tls.secretName }}
+            - name: TRIVY_AGENT_TLS_CERT_FILE
+              value: /tls/tls.crt
+            - name: TRIVY_AGENT_TLS_KEY_FILE
+              value: /tls/tls.key
+            - name: TRIVY_AGENT_TLS_CA_FILE
+              value: /tls/ca.crt
+            {{- end }}
+          {{- if .Values.tls.secretName }}
+          volumeMounts:
+            - name: tls
+              mountPath: /tls
+              readOnly: true
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- if .Values.tls.secretName }}
+      volumes:
+        - name: tls
+          secret:
+            secretName: {{ .Values.tls.secretName }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

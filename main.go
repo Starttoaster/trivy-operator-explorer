@@ -2,8 +2,15 @@ package main
 
 import (
 	"embed"
+	"fmt"
+	"os"
+	"strings"
 
-	"github.com/starttoaster/trivy-operator-explorer/cmd"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"github.com/starttoaster/trivy-operator-explorer/internal/db"
+	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
+	"github.com/starttoaster/trivy-operator-explorer/internal/web"
 	"github.com/starttoaster/trivy-operator-explorer/internal/web/content"
 )
 
@@ -37,5 +44,49 @@ var static embed.FS
 
 func main() {
 	content.Init(static)
-	cmd.Execute()
+
+	rootCmd := &cobra.Command{
+		Use:   "trivy-operator-explorer",
+		Short: "Web frontend for exploring trivy-operator data across clusters",
+		Run: func(cmd *cobra.Command, args []string) {
+			log.Init(viper.GetString("log-level"))
+
+			dsn := viper.GetString("db-dsn")
+			if dsn == "" {
+				log.Fatal("db-dsn is required")
+			}
+
+			if err := db.Init(dsn); err != nil {
+				log.Fatal("error initializing database", "error", err.Error())
+			}
+
+			port := viper.GetString("server-port")
+			if port == "" {
+				log.Fatal("server-port is required")
+			}
+
+			if err := web.Start(port); err != nil {
+				log.Fatal("web server error", "error", err.Error())
+			}
+		},
+	}
+
+	viper.SetEnvPrefix("TRIVY_OPERATOR_EXPLORER")
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+	viper.AutomaticEnv()
+
+	rootCmd.Flags().String("log-level", "info", "Log level (debug, info, warn, error)")
+	rootCmd.Flags().Uint16("server-port", 8080, "Port the web server binds to")
+	rootCmd.Flags().String("db-dsn", "", "Postgres connection string")
+
+	for _, f := range []string{"log-level", "server-port", "db-dsn"} {
+		if err := viper.BindPFlag(f, rootCmd.Flags().Lookup(f)); err != nil {
+			fmt.Printf("error binding flag %s: %v\n", f, err)
+			os.Exit(1)
+		}
+	}
+
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }

@@ -16,9 +16,10 @@ type Data struct {
 
 // ResourceMetadata data related to a k8s resource using an image
 type ResourceMetadata struct {
-	Kind      string
-	Name      string
-	Namespace string
+	ClusterName string
+	Kind        string
+	Name        string
+	Namespace   string
 }
 
 // Secret data related to an exposed secret

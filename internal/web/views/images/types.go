@@ -27,9 +27,10 @@ type Data struct {
 
 // ResourceMetadata data related to a k8s resource using a vulnerable image
 type ResourceMetadata struct {
-	Kind      string
-	Name      string
-	Namespace string
+	ClusterName string
+	Kind        string
+	Name        string
+	Namespace   string
 }
 
 // Vulnerability data related to a CVE
