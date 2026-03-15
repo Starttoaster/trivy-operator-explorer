@@ -68,7 +68,7 @@ openssl req -x509 -new -nodes -key ca.key -sha256 -days 3650 \
   -subj "/CN=trivy-explorer-ca" -out ca.crt
 ```
 
-Make sure to save `ca.key` and `ca.crt`!
+Make sure to save `ca.crt`!
 
 ### 2. Generate the API server certificate
 
