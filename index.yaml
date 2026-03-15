@@ -301,4 +301,27 @@ entries:
     urls:
     - https://github.com/Starttoaster/trivy-operator-explorer/releases/download/trivy-operator-explorer-0.0.1/trivy-operator-explorer-0.0.1.tgz
     version: 0.0.1
-generated: "2026-02-23T20:24:09.931515752Z"
+  trivy-operator-explorer-agent:
+  - apiVersion: v2
+    appVersion: 2.0.0
+    created: "2026-03-15T01:33:21.74094276Z"
+    description: Per-cluster agent that watches trivy-operator CRDs and syncs to the
+      central API
+    digest: 0b1c9339a4906d9f0b0ceaf0823d152066738513f9a9ce09713ce65264b16fd5
+    name: trivy-operator-explorer-agent
+    type: application
+    urls:
+    - https://github.com/Starttoaster/trivy-operator-explorer/releases/download/trivy-operator-explorer-agent-0.1.0/trivy-operator-explorer-agent-0.1.0.tgz
+    version: 0.1.0
+  trivy-operator-explorer-server:
+  - apiVersion: v2
+    appVersion: 2.0.0
+    created: "2026-03-15T01:33:21.857187168Z"
+    description: Central server (API + Frontend) for trivy-operator-explorer v2
+    digest: 9e73f0ea88ccc31a847bda66493d3f3c726f00962f2b60861647c43067820c77
+    name: trivy-operator-explorer-server
+    type: application
+    urls:
+    - https://github.com/Starttoaster/trivy-operator-explorer/releases/download/trivy-operator-explorer-server-0.1.0/trivy-operator-explorer-server-0.1.0.tgz
+    version: 0.1.0
+generated: "2026-03-15T01:33:21.857262995Z"
