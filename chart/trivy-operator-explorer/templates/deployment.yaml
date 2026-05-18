@@ -39,11 +39,16 @@ spec:
             - name: http
               containerPort: {{ .Values.config.port }}
               protocol: TCP
+            - name: mcp
+              containerPort: {{ .Values.config.mcp_port }}
+              protocol: TCP
           env:
             - name: TRIVY_OPERATOR_EXPLORER_LOG_LEVEL
               value: '{{ .Values.config.log_level }}'
             - name: TRIVY_OPERATOR_EXPLORER_SERVER_PORT
               value: '{{ .Values.config.port }}'
+            - name: TRIVY_OPERATOR_EXPLORER_MCP_PORT
+              value: '{{ .Values.config.mcp_port }}'
             - name: TRIVY_OPERATOR_EXPLORER_DB_PATH
               value: '{{ .Values.database.mountPath }}'
           volumeMounts:

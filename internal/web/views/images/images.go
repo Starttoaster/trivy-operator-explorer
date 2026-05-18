@@ -136,6 +136,10 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 				Title:             v.Title,
 				VulnerableVersion: v.InstalledVersion,
 				FixedVersion:      v.FixedVersion,
+				Class:             v.Class,
+				PackageType:       v.PackageType,
+				PkgPath:           v.PkgPath,
+				PkgPURL:           v.PkgPURL,
 			}
 
 			// Filter by hasfix

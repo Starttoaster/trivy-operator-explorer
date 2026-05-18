@@ -412,7 +412,11 @@
           "resource": { "type": "string" },
           "title": { "type": "string" },
           "vulnerable_version": { "type": "string" },
-          "fixed_version": { "type": "string" }
+          "fixed_version": { "type": "string" },
+          "class": { "type": "string", "description": "Trivy classification of the vulnerable package, typically \"os-pkgs\" for OS-distribution packages or \"lang-pkgs\" for application packages. Empty when Trivy did not populate it." },
+          "package_type": { "type": "string", "description": "Specific package manager that produced the package (e.g. apk, dpkg, rpm, gobinary, npm, pypi)." },
+          "pkg_path": { "type": "string", "description": "On-disk location of the vulnerable package inside the image, when known." },
+          "pkg_purl": { "type": "string", "description": "Package URL (purl) identifier for the vulnerable package." }
         }
       },
       "ImagesData": {

@@ -34,6 +34,20 @@ type Vulnerability struct {
 	VulnerableVersion string `json:"vulnerable_version"`
 	// The version this vulnerability is fixed in
 	FixedVersion string `json:"fixed_version"`
+	// Class is the Trivy classification of the vulnerable package, typically
+	// "os-pkgs" for OS-distribution packages (apk/dpkg/rpm/...) or "lang-pkgs"
+	// for language/application packages (gobinary/npm/pypi/...). Empty when
+	// Trivy did not populate it.
+	Class string `json:"class,omitempty"`
+	// PackageType is the specific package manager that produced the package,
+	// e.g. "apk", "dpkg", "rpm" for OS packages, or "gobinary", "npm", "pypi"
+	// for language packages.
+	PackageType string `json:"package_type,omitempty"`
+	// PkgPath is the on-disk location of the vulnerable package inside the
+	// image, when known (typically populated for language packages).
+	PkgPath string `json:"pkg_path,omitempty"`
+	// PkgPURL is the package URL (purl) identifier for the vulnerable package.
+	PkgPURL string `json:"pkg_purl,omitempty"`
 	// Whether this CVE is ignored
 	IsIgnored bool `json:"is_ignored"`
 	// Reason why this CVE is ignored (if applicable)

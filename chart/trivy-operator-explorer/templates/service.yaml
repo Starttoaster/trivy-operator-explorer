@@ -11,5 +11,9 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+    - port: {{ .Values.service.mcpPort }}
+      targetPort: mcp
+      protocol: TCP
+      name: mcp
   selector:
     {{- include "trivy-operator-explorer.selectorLabels" . | nindent 4 }}

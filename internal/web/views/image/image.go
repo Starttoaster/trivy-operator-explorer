@@ -81,6 +81,10 @@ func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters, ignoredCVE
 				Title:             v.Title,
 				VulnerableVersion: v.InstalledVersion,
 				FixedVersion:      v.FixedVersion,
+				Class:             v.Class,
+				PackageType:       v.PackageType,
+				PkgPath:           v.PkgPath,
+				PkgPURL:           v.PkgPURL,
 				IsIgnored:         isIgnored,
 				IgnoreReason:      ignoredReason,
 			}
