@@ -126,6 +126,13 @@ func aggregateCVEs(reports *v1alpha1.VulnerabilityReportList, showIgnored bool) 
 				score = *v.Score
 			}
 
+			// Resolve class/package_type once per occurrence, falling back to
+			// the packagePURL ("pkg:<type>/...") when trivy left the explicit
+			// fields blank. Both the top-level aggregate and the affected_images
+			// entry below need to see the derived values so MCP clients can
+			// filter list_cves?class=os-pkgs without re-parsing purls.
+			vClass, vPackageType := utils.DeriveVulnerabilityClassAndPackageType(v)
+
 			agg, ok := out[v.VulnerabilityID]
 			if !ok {
 				agg = &cveAggregate{
@@ -135,8 +142,8 @@ func aggregateCVEs(reports *v1alpha1.VulnerabilityReportList, showIgnored bool) 
 					Title:              v.Title,
 					URL:                v.PrimaryLink,
 					HasFix:             strings.TrimSpace(v.FixedVersion) != "",
-					Class:              v.Class,
-					PackageType:        v.PackageType,
+					Class:              vClass,
+					PackageType:        vPackageType,
 					IgnoredOnAllImages: true,
 				}
 				out[v.VulnerabilityID] = agg
@@ -151,10 +158,10 @@ func aggregateCVEs(reports *v1alpha1.VulnerabilityReportList, showIgnored bool) 
 					agg.HasFix = true
 				}
 				if agg.Class == "" {
-					agg.Class = v.Class
+					agg.Class = vClass
 				}
 				if agg.PackageType == "" {
-					agg.PackageType = v.PackageType
+					agg.PackageType = vPackageType
 				}
 				if agg.Title == "" {
 					agg.Title = v.Title
@@ -177,8 +184,8 @@ func aggregateCVEs(reports *v1alpha1.VulnerabilityReportList, showIgnored bool) 
 				VulnerableVersion: v.InstalledVersion,
 				FixedVersion:      v.FixedVersion,
 				Resource:          v.Resource,
-				Class:             v.Class,
-				PackageType:       v.PackageType,
+				Class:             vClass,
+				PackageType:       vPackageType,
 				PkgPath:           v.PkgPath,
 				PkgPURL:           v.PkgPURL,
 				Score:             score,

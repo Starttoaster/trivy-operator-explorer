@@ -52,6 +52,8 @@ Each tool's full input/output JSON Schema is published over the MCP `tools/list`
 
 List every container image known to the cluster (scanned by trivy-operator plus any unscanned images detected via running pods). Returns per-image summary with vulnerability counts grouped by severity, fix-available counts, OS metadata, and the workloads that use the image. Mirrors the filters available at `/api/v1/images`.
 
+Each entry in `critical_vulnerabilities` / `high_vulnerabilities` / `medium_vulnerabilities` / `low_vulnerabilities` carries Trivy's classification fields (`class`, `package_type`, `pkg_path`, `pkg_purl`) — same definitions as for `get_image` below — so a single `list_images` call is enough to triage "base-OS CVE vs. application CVE" without falling back to `list_cves`.
+
 Inputs (all optional): `severity`, `has_fix`, `show_ignored`, `os_family`, `eosl` (tri-state), `cve_ids` (logical AND).
 
 ### `get_image` (read)
@@ -59,16 +61,20 @@ Inputs (all optional): `severity`, `has_fix`, `show_ignored`, `os_family`, `eosl
 Full vulnerability list for a single image. Identify the image either by `ref` (canonical fully-qualified ref like `index.docker.io/library/nginx:1.27@sha256:...`) or by split `registry`/`repository`/`tag`/`digest`. Each returned `Vulnerability` includes Trivy's classification fields:
 
 - `class` — typically `"os-pkgs"` for OS-distribution packages or `"lang-pkgs"` for application packages.
-- `package_type` — the specific package manager (`apk`, `dpkg`, `rpm`, `gobinary`, `npm`, `pypi`, ...).
+- `package_type` — the specific package manager (`apk`, `dpkg`, `rpm`, `gobinary`, `node-pkg`, `python-pkg`, ...).
 - `pkg_path`, `pkg_purl` — package location and PURL identifier when known.
 
 These let an LLM distinguish CVEs introduced by the container base OS from those introduced by the application's own dependencies, without the server having to bake in a heuristic.
+
+When the upstream trivy scanner leaves `class` / `package_type` blank but still emits a `pkg_purl`, the explorer derives them from the purl's type prefix (`pkg:apk/...` → `os-pkgs`/`apk`, `pkg:npm/...` → `lang-pkgs`/`node-pkg`, `pkg:pypi/...` → `lang-pkgs`/`python-pkg`, …). This means clients can rely on the two fields being populated for every vulnerability whose purl carries a recognized type, regardless of trivy-operator version.
 
 Inputs: `ref` OR (`repository` + `digest`, with optional `registry` + `tag`). Optional filters: `severity`, `has_fix`, `show_ignored`, `resources`.
 
 ### `list_cves` (read)
 
 Cluster-wide CVE rollup. For every unique CVE that appears in any vulnerability report, returns the worst severity, max CVSS score, fix availability, Trivy class/package type, count of affected images, and (per-affected-image) the vulnerable/fixed version, package path, and ignore state.
+
+Top-level `class` and `package_type` on each CVE aggregate are populated using the same purl-fallback as `get_image` / `list_images`, so `list_cves(class="os-pkgs")` and `list_cves(package_type="apk")` filter server-side instead of forcing the client to download every CVE and parse `affected_images[].pkg_purl`. Affected-image entries carry the same fields.
 
 Inputs (all optional): `severity`, `has_fix` (tri-state), `class`, `package_type`, `cve_id` (single-CVE lookup), `show_ignored`, `sort_by`, `limit`.
 

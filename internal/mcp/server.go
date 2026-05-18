@@ -69,8 +69,13 @@ Use the read tools (list_images, get_image, list_cves, list_images_with_cve,
 list_ignored_cves) to inspect findings, then use the mutating tools
 (ignore_cves, unignore_cves) to manage the ignore list per image.
 
-Every Vulnerability returned from get_image, list_cves, and list_images_with_cve
-includes the trivy classification fields "class" (e.g. "os-pkgs", "lang-pkgs")
-and "package_type" (e.g. "apk", "dpkg", "gobinary", "npm"), which let you
-distinguish CVEs introduced by the container base OS from those introduced by
-the application's own dependencies.`
+Every Vulnerability returned from list_images, get_image, list_cves, and
+list_images_with_cve includes the trivy classification fields "class" (e.g.
+"os-pkgs", "lang-pkgs") and "package_type" (e.g. "apk", "dpkg", "gobinary",
+"node-pkg"). list_cves and list_images_with_cve additionally surface the
+same fields at the top level of every CVE aggregate so you can filter
+list_cves with class="os-pkgs" / "lang-pkgs" (or package_type=...) without
+downloading every CVE and re-parsing pkg_purl. When trivy itself leaves
+class/package_type blank on a report the server derives them from the
+package URL prefix (pkg:apk/... → os-pkgs/apk, pkg:npm/... → lang-pkgs/
+node-pkg, etc.), so these fields are reliable across operator versions.`

@@ -73,7 +73,9 @@ func Start(port string) error {
 	// TODO just serve the js and css directories in static
 	// this serves the html templates for no reason
 	mux.Handle("/static/", http.FileServer(http.FS(content.Static)))
-	return http.ListenAndServe(fmt.Sprintf(":%s", port), mux)
+	addr := fmt.Sprintf(":%s", port)
+	log.Logger.Info("HTTP server listening", "addr", addr)
+	return http.ListenAndServe(addr, mux)
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {

@@ -127,6 +127,7 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 			if v.Score != nil {
 				score = *v.Score
 			}
+			class, packageType := utils.DeriveVulnerabilityClassAndPackageType(v)
 			vuln := Vulnerability{
 				ID:                v.VulnerabilityID,
 				Severity:          string(v.Severity),
@@ -136,8 +137,8 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 				Title:             v.Title,
 				VulnerableVersion: v.InstalledVersion,
 				FixedVersion:      v.FixedVersion,
-				Class:             v.Class,
-				PackageType:       v.PackageType,
+				Class:             class,
+				PackageType:       packageType,
 				PkgPath:           v.PkgPath,
 				PkgPURL:           v.PkgPURL,
 			}

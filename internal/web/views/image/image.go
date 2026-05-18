@@ -72,6 +72,7 @@ func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters, ignoredCVE
 				}
 			}
 
+			class, packageType := utils.DeriveVulnerabilityClassAndPackageType(v)
 			vuln := Vulnerability{
 				ID:                v.VulnerabilityID,
 				Severity:          string(v.Severity),
@@ -81,8 +82,8 @@ func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters, ignoredCVE
 				Title:             v.Title,
 				VulnerableVersion: v.InstalledVersion,
 				FixedVersion:      v.FixedVersion,
-				Class:             v.Class,
-				PackageType:       v.PackageType,
+				Class:             class,
+				PackageType:       packageType,
 				PkgPath:           v.PkgPath,
 				PkgPURL:           v.PkgPURL,
 				IsIgnored:         isIgnored,
