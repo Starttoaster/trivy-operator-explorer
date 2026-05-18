@@ -1,0 +1,763 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Trivy Operator Explorer API",
+    "description": "Read-only JSON access to the trivy-operator reports surfaced by this explorer, plus management of ignored CVEs. Every read endpoint mirrors the equivalent HTML page; every mutation endpoint lives under /api/v1/ignores.",
+    "version": "v1"
+  },
+  "servers": [
+    { "url": "/", "description": "Same-origin (default)." }
+  ],
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "summary": "Liveness probe.",
+        "description": "Returns a small JSON document confirming the server is running and what version is installed. Does not touch Kubernetes.",
+        "responses": {
+          "200": {
+            "description": "Server is up.",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/HealthResponse" } }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/openapi.json": {
+      "get": {
+        "summary": "Fetch this OpenAPI document.",
+        "responses": {
+          "200": {
+            "description": "OpenAPI 3 document.",
+            "content": { "application/json": {} }
+          }
+        }
+      }
+    },
+    "/api/v1/": {
+      "get": {
+        "summary": "Aggregated index summary.",
+        "description": "Counters for image vulnerabilities (by severity, fix-available, end-of-service-life) plus the full list of compliance reports.",
+        "responses": {
+          "200": {
+            "description": "Index summary.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/IndexView" } } }
+          },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/images": {
+      "get": {
+        "summary": "List all scanned (and unscanned) container images.",
+        "parameters": [
+          { "$ref": "#/components/parameters/HasFix" },
+          { "$ref": "#/components/parameters/ShowIgnored" },
+          {
+            "name": "severity",
+            "in": "query",
+            "description": "Keep only images that contain at least one non-ignored CVE of this severity. Case-insensitive (critical|high|medium|low).",
+            "required": false,
+            "schema": { "type": "string", "enum": ["critical", "high", "medium", "low"] }
+          },
+          {
+            "name": "os_family",
+            "in": "query",
+            "description": "Keep only images whose detected OS family matches this string (case-insensitive, exact).",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "eosl",
+            "in": "query",
+            "description": "Tri-state filter: true returns only end-of-service-life images, false returns only non-EOSL images, omitted returns both.",
+            "required": false,
+            "schema": { "type": "boolean" }
+          },
+          {
+            "name": "cve",
+            "in": "query",
+            "description": "Keep only images containing all listed CVE IDs (logical AND). Repeat the parameter for multiple values.",
+            "required": false,
+            "schema": { "type": "array", "items": { "type": "string" } },
+            "style": "form",
+            "explode": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of images.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ImagesView" } } }
+          },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/image": {
+      "get": {
+        "summary": "Get the detail view for a single image.",
+        "description": "Pass either `ref` (a canonical fully-qualified image reference like `index.docker.io/library/nginx:1.27@sha256:...`) or the split `registry`/`repository`/`tag`/`digest` parameters. `ref` wins when both are supplied.",
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "query",
+            "description": "Canonical image ref (`<registry>/<repository>[:<tag>]@<digest>`). Must include a digest.",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          { "name": "registry", "in": "query", "description": "Image registry host. Defaults to index.docker.io when empty.", "schema": { "type": "string" } },
+          { "name": "repository", "in": "query", "description": "Image repository. Required when `ref` is not supplied.", "schema": { "type": "string" } },
+          { "name": "tag", "in": "query", "description": "Image tag.", "schema": { "type": "string" } },
+          { "name": "digest", "in": "query", "description": "Image digest. Required when `ref` is not supplied.", "schema": { "type": "string" } },
+          { "$ref": "#/components/parameters/Severity" },
+          { "$ref": "#/components/parameters/HasFix" },
+          { "$ref": "#/components/parameters/ShowIgnored" },
+          {
+            "name": "resources",
+            "in": "query",
+            "description": "Restrict to CVEs affecting the named installed package(s). Repeat the parameter for multiple values.",
+            "required": false,
+            "schema": { "type": "array", "items": { "type": "string" } },
+            "style": "form",
+            "explode": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image detail.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ImageView" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/configaudits": {
+      "get": {
+        "summary": "List ConfigAuditReports.",
+        "parameters": [
+          { "name": "namespace", "in": "query", "schema": { "type": "string" } },
+          { "name": "kind", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "List of config audits.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConfigAuditsView" } } } },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/configaudit": {
+      "get": {
+        "summary": "Get a single ConfigAuditReport.",
+        "parameters": [
+          { "name": "name", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "namespace", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "kind", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "$ref": "#/components/parameters/Severity" }
+        ],
+        "responses": {
+          "200": { "description": "Config audit detail.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ConfigAuditView" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/clusteraudits": {
+      "get": {
+        "summary": "List ClusterInfraAssessmentReports.",
+        "responses": {
+          "200": { "description": "List of cluster audits.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ClusterAuditsView" } } } },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/clusteraudit": {
+      "get": {
+        "summary": "Get a single ClusterInfraAssessmentReport.",
+        "parameters": [
+          { "name": "name", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "kind", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "$ref": "#/components/parameters/Severity" }
+        ],
+        "responses": {
+          "200": { "description": "Cluster audit detail.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ClusterAuditView" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/clusterroles": {
+      "get": {
+        "summary": "List ClusterRbacAssessmentReports.",
+        "responses": {
+          "200": { "description": "List of cluster roles.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ClusterRolesView" } } } },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/clusterrole": {
+      "get": {
+        "summary": "Get a single ClusterRbacAssessmentReport.",
+        "parameters": [
+          { "name": "name", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "$ref": "#/components/parameters/Severity" }
+        ],
+        "responses": {
+          "200": { "description": "Cluster role detail.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ClusterRoleView" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/exposedsecrets": {
+      "get": {
+        "summary": "List ExposedSecretReports.",
+        "responses": {
+          "200": { "description": "List of exposed-secret findings.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ExposedSecretsView" } } } },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/exposedsecret": {
+      "get": {
+        "summary": "Get a single exposed-secret detail view.",
+        "parameters": [
+          { "name": "image", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "digest", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "$ref": "#/components/parameters/Severity" }
+        ],
+        "responses": {
+          "200": { "description": "Exposed-secret detail.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ExposedSecretView" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/roles": {
+      "get": {
+        "summary": "List RbacAssessmentReports.",
+        "parameters": [
+          { "name": "namespace", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "List of role audits.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RolesView" } } } },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/role": {
+      "get": {
+        "summary": "Get a single RbacAssessmentReport.",
+        "parameters": [
+          { "name": "name", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "namespace", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "$ref": "#/components/parameters/Severity" }
+        ],
+        "responses": {
+          "200": { "description": "Role detail.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RoleView" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/compliancereports": {
+      "get": {
+        "summary": "List ClusterComplianceReports.",
+        "responses": {
+          "200": { "description": "List of compliance reports.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ComplianceView" } } } },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/compliancereport": {
+      "get": {
+        "summary": "Get a single ClusterComplianceReport.",
+        "parameters": [
+          { "name": "id", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Compliance report id (e.g. cis, k8s-cis)." },
+          { "$ref": "#/components/parameters/Severity" }
+        ],
+        "responses": {
+          "200": { "description": "Compliance report detail.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ComplianceData" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/ignores": {
+      "get": {
+        "summary": "List all ignored image vulnerabilities.",
+        "parameters": [
+          { "name": "registry", "in": "query", "schema": { "type": "string" }, "description": "Filter by registry (exact)." },
+          { "name": "repository", "in": "query", "schema": { "type": "string" }, "description": "Filter by repository (exact)." },
+          { "name": "tag", "in": "query", "schema": { "type": "string" }, "description": "Filter by tag (exact)." }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of ignored image vulnerabilities.",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/IgnoredImageVulnerability" } } } }
+          },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "post": {
+        "summary": "Ignore one or more CVEs for an image.",
+        "description": "Idempotent: rows that already exist are skipped and not counted in the response.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/IgnoresInsertRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Number of rows inserted.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/IgnoresInsertResponse" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      },
+      "delete": {
+        "summary": "Un-ignore one or more CVEs for an image.",
+        "description": "Idempotent: rows that don't exist are silently ignored. JSON body is intentionally used (symmetric with POST) so multiple CVE IDs can be deleted in a single call.",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/IgnoresDeleteRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Number of rows deleted.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/IgnoresDeleteResponse" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "HasFix": {
+        "name": "hasfix",
+        "in": "query",
+        "description": "When true, only return vulnerabilities that have a fixed version.",
+        "required": false,
+        "schema": { "type": "boolean" }
+      },
+      "ShowIgnored": {
+        "name": "showignored",
+        "in": "query",
+        "description": "When true, include CVEs marked as ignored in the database (and image-level results that only match because of them).",
+        "required": false,
+        "schema": { "type": "boolean" }
+      },
+      "Severity": {
+        "name": "severity",
+        "in": "query",
+        "description": "Case-insensitive severity filter (critical|high|medium|low).",
+        "required": false,
+        "schema": { "type": "string", "enum": ["critical", "high", "medium", "low"] }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Malformed or missing parameters.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "NotFound": {
+        "description": "Resource not found.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "InternalError": {
+        "description": "Internal failure (e.g. talking to the Kubernetes API or the sqlite database).",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": { "type": "string", "description": "Human-readable error message." }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "required": ["status", "version"],
+        "properties": {
+          "status": { "type": "string", "example": "ok" },
+          "version": { "type": "string", "example": "dev" }
+        }
+      },
+      "ImageResource": {
+        "type": "object",
+        "required": ["kind", "name", "namespace"],
+        "properties": {
+          "kind": { "type": "string" },
+          "name": { "type": "string" },
+          "namespace": { "type": "string" }
+        }
+      },
+      "ImagesVulnerability": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "severity": { "type": "string" },
+          "score": { "type": "number", "format": "float" },
+          "url": { "type": "string" },
+          "resource": { "type": "string" },
+          "title": { "type": "string" },
+          "vulnerable_version": { "type": "string" },
+          "fixed_version": { "type": "string" },
+          "class": { "type": "string", "description": "Trivy classification of the vulnerable package, typically \"os-pkgs\" for OS-distribution packages or \"lang-pkgs\" for application packages. Empty when Trivy did not populate it." },
+          "package_type": { "type": "string", "description": "Specific package manager that produced the package (e.g. apk, dpkg, rpm, gobinary, npm, pypi)." },
+          "pkg_path": { "type": "string", "description": "On-disk location of the vulnerable package inside the image, when known." },
+          "pkg_purl": { "type": "string", "description": "Package URL (purl) identifier for the vulnerable package." }
+        }
+      },
+      "ImagesData": {
+        "type": "object",
+        "properties": {
+          "ref": { "type": "string", "description": "Canonical, fully-qualified image reference. Can be passed back to /api/v1/image as ?ref=...." },
+          "registry": { "type": "string" },
+          "name": { "type": "string" },
+          "tag": { "type": "string" },
+          "digest": { "type": "string" },
+          "os_family": { "type": "string" },
+          "os_version": { "type": "string" },
+          "os_end_of_service_life": { "type": "string" },
+          "resources": { "type": "array", "items": { "$ref": "#/components/schemas/ImageResource" } },
+          "critical_vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/ImagesVulnerability" } },
+          "high_vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/ImagesVulnerability" } },
+          "medium_vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/ImagesVulnerability" } },
+          "low_vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/ImagesVulnerability" } },
+          "fix_available_count": { "type": "integer" },
+          "no_fix_available_count": { "type": "integer" },
+          "unscanned": { "type": "boolean" }
+        }
+      },
+      "ImagesView": {
+        "type": "array",
+        "items": { "$ref": "#/components/schemas/ImagesData" }
+      },
+      "ImageVulnerability": {
+        "allOf": [
+          { "$ref": "#/components/schemas/ImagesVulnerability" },
+          {
+            "type": "object",
+            "properties": {
+              "is_ignored": { "type": "boolean" },
+              "ignore_reason": { "type": "string" }
+            }
+          }
+        ]
+      },
+      "ImageView": {
+        "type": "object",
+        "properties": {
+          "ref": { "type": "string" },
+          "registry": { "type": "string" },
+          "repository": { "type": "string" },
+          "tag": { "type": "string" },
+          "digest": { "type": "string" },
+          "os_family": { "type": "string" },
+          "os_version": { "type": "string" },
+          "os_end_of_service_life": { "type": "string" },
+          "vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/ImageVulnerability" } }
+        }
+      },
+      "RoleVulnerability": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      },
+      "RolesData": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "namespace": { "type": "string" },
+          "kind": { "type": "string" },
+          "critical_vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/RoleVulnerability" } },
+          "high_vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/RoleVulnerability" } },
+          "medium_vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/RoleVulnerability" } },
+          "low_vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/RoleVulnerability" } }
+        }
+      },
+      "RolesView": {
+        "type": "array",
+        "items": { "$ref": "#/components/schemas/RolesData" }
+      },
+      "RoleViewVulnerability": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "url": { "type": "string" },
+          "severity": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      },
+      "RoleView": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "namespace": { "type": "string" },
+          "kind": { "type": "string" },
+          "vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/RoleViewVulnerability" } }
+        }
+      },
+      "ClusterRolesData": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "kind": { "type": "string" },
+          "critical_vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/RoleVulnerability" } },
+          "high_vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/RoleVulnerability" } },
+          "medium_vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/RoleVulnerability" } },
+          "low_vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/RoleVulnerability" } }
+        }
+      },
+      "ClusterRolesView": {
+        "type": "array",
+        "items": { "$ref": "#/components/schemas/ClusterRolesData" }
+      },
+      "ClusterRoleView": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "kind": { "type": "string" },
+          "vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/RoleViewVulnerability" } }
+        }
+      },
+      "ConfigAuditVulnerability": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      },
+      "ConfigAuditsData": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "namespace": { "type": "string" },
+          "kind": { "type": "string" },
+          "critical_vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/ConfigAuditVulnerability" } },
+          "high_vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/ConfigAuditVulnerability" } },
+          "medium_vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/ConfigAuditVulnerability" } },
+          "low_vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/ConfigAuditVulnerability" } }
+        }
+      },
+      "ConfigAuditsView": {
+        "type": "array",
+        "items": { "$ref": "#/components/schemas/ConfigAuditsData" }
+      },
+      "ConfigAuditViewVulnerability": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "url": { "type": "string" },
+          "severity": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      },
+      "ConfigAuditView": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "namespace": { "type": "string" },
+          "kind": { "type": "string" },
+          "vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/ConfigAuditViewVulnerability" } }
+        }
+      },
+      "ClusterAuditCheck": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      },
+      "ClusterAuditsData": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "kind": { "type": "string" },
+          "critical_checks": { "type": "array", "items": { "$ref": "#/components/schemas/ClusterAuditCheck" } },
+          "high_checks": { "type": "array", "items": { "$ref": "#/components/schemas/ClusterAuditCheck" } },
+          "medium_checks": { "type": "array", "items": { "$ref": "#/components/schemas/ClusterAuditCheck" } },
+          "low_checks": { "type": "array", "items": { "$ref": "#/components/schemas/ClusterAuditCheck" } }
+        }
+      },
+      "ClusterAuditsView": {
+        "type": "array",
+        "items": { "$ref": "#/components/schemas/ClusterAuditsData" }
+      },
+      "ClusterAuditViewCheck": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "url": { "type": "string" },
+          "severity": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "remediation": { "type": "string" }
+        }
+      },
+      "ClusterAuditView": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "kind": { "type": "string" },
+          "checks": { "type": "array", "items": { "$ref": "#/components/schemas/ClusterAuditViewCheck" } }
+        }
+      },
+      "ExposedSecret": {
+        "type": "object",
+        "properties": {
+          "severity": { "type": "string" },
+          "title": { "type": "string" },
+          "target": { "type": "string" },
+          "match": { "type": "string" }
+        }
+      },
+      "ExposedSecretsData": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "digest": { "type": "string" },
+          "resources": { "type": "array", "items": { "$ref": "#/components/schemas/ImageResource" } },
+          "critical": { "type": "array", "items": { "$ref": "#/components/schemas/ExposedSecret" } },
+          "high": { "type": "array", "items": { "$ref": "#/components/schemas/ExposedSecret" } },
+          "medium": { "type": "array", "items": { "$ref": "#/components/schemas/ExposedSecret" } },
+          "low": { "type": "array", "items": { "$ref": "#/components/schemas/ExposedSecret" } }
+        }
+      },
+      "ExposedSecretsView": {
+        "type": "array",
+        "items": { "$ref": "#/components/schemas/ExposedSecretsData" }
+      },
+      "ExposedSecretView": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "digest": { "type": "string" },
+          "secrets": { "type": "array", "items": { "$ref": "#/components/schemas/ExposedSecret" } }
+        }
+      },
+      "ComplianceSummary": {
+        "type": "object",
+        "properties": {
+          "fail_count": { "type": "integer" },
+          "pass_count": { "type": "integer" },
+          "critical_fail_count": { "type": "integer" },
+          "high_fail_count": { "type": "integer" },
+          "medium_fail_count": { "type": "integer" },
+          "low_fail_count": { "type": "integer" },
+          "unknown_fail_count": { "type": "integer" }
+        }
+      },
+      "ComplianceCheckID": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "url": { "type": "string" }
+        }
+      },
+      "ComplianceCheck": {
+        "type": "object",
+        "properties": {
+          "id_number": { "type": "string" },
+          "id": { "type": "array", "items": { "$ref": "#/components/schemas/ComplianceCheckID" } },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "severity": { "type": "string" },
+          "total_failed": { "type": "integer", "nullable": true }
+        }
+      },
+      "ComplianceData": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "summary": { "$ref": "#/components/schemas/ComplianceSummary" },
+          "checks": { "type": "array", "items": { "$ref": "#/components/schemas/ComplianceCheck" } }
+        }
+      },
+      "ComplianceView": {
+        "type": "array",
+        "items": { "$ref": "#/components/schemas/ComplianceData" }
+      },
+      "IndexView": {
+        "type": "object",
+        "properties": {
+          "critical_vulnerabilities": { "type": "integer" },
+          "high_vulnerabilities": { "type": "integer" },
+          "medium_vulnerabilities": { "type": "integer" },
+          "low_vulnerabilities": { "type": "integer" },
+          "fix_available_count": { "type": "integer" },
+          "no_fix_available_count": { "type": "integer" },
+          "eosl_count": { "type": "integer" },
+          "no_eosl_count": { "type": "integer" },
+          "compliance_reports": { "type": "array", "items": { "$ref": "#/components/schemas/ComplianceData" } }
+        }
+      },
+      "IgnoredImageVulnerability": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "registry": { "type": "string" },
+          "repository": { "type": "string" },
+          "tag": { "type": "string" },
+          "cve_id": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      },
+      "IgnoresInsertRequest": {
+        "type": "object",
+        "required": ["repository", "tag", "cve_ids", "reason"],
+        "properties": {
+          "registry": { "type": "string", "description": "Defaults to index.docker.io when empty." },
+          "repository": { "type": "string" },
+          "tag": { "type": "string" },
+          "cve_ids": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "reason": { "type": "string" }
+        }
+      },
+      "IgnoresInsertResponse": {
+        "type": "object",
+        "required": ["inserted"],
+        "properties": {
+          "inserted": { "type": "integer", "description": "Number of rows actually inserted. Already-ignored CVEs are skipped and not counted." }
+        }
+      },
+      "IgnoresDeleteRequest": {
+        "type": "object",
+        "required": ["repository", "tag", "cve_ids"],
+        "properties": {
+          "registry": { "type": "string", "description": "Defaults to index.docker.io when empty." },
+          "repository": { "type": "string" },
+          "tag": { "type": "string" },
+          "cve_ids": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+        }
+      },
+      "IgnoresDeleteResponse": {
+        "type": "object",
+        "required": ["deleted"],
+        "properties": {
+          "deleted": { "type": "integer", "description": "Number of rows actually deleted. Non-existent rows are silently skipped." }
+        }
+      }
+    }
+  }
+}

@@ -21,6 +21,10 @@ config:
   # If you change this, change the service.port value too
   port: '8080'
 
+  # Port for the Model Context Protocol (MCP) server. Served at the /mcp path
+  # over Streamable HTTP. If you change this, change the service.mcpPort value too.
+  mcp_port: '8081'
+
 # Database volume configuration
 # By default, uses an emptyDir volume (ephemeral storage)
 # To use persistent storage, set persistentVolumeClaim.enabled to true
@@ -71,6 +75,8 @@ securityContext:
 service:
   type: ClusterIP
   port: 8080
+  # Port the MCP server is exposed on. Matches config.mcp_port.
+  mcpPort: 8081
 
 ingress:
   enabled: false

@@ -10,6 +10,7 @@ import (
 	"github.com/starttoaster/trivy-operator-explorer/internal/db"
 	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
+	"github.com/starttoaster/trivy-operator-explorer/internal/mcp"
 	"github.com/starttoaster/trivy-operator-explorer/internal/web"
 )
 
@@ -46,7 +47,20 @@ var rootCmd = &cobra.Command{
 		if viper.GetString("server-port") == "" {
 			log.Fatal("server port flag not set. Should be 8080 by default. This likely means it was overridden by user input with no value.")
 		}
-		cobra.CheckErr(web.Start(viper.GetString("server-port")))
+		if viper.GetString("mcp-port") == "" {
+			log.Fatal("mcp port flag not set. Should be 8081 by default. This likely means it was overridden by user input with no value.")
+		}
+
+		// Start the web server and the MCP server concurrently. They live in
+		// the same process so they share the same kube client and sqlite
+		// connection, but they listen on independent ports so the MCP surface
+		// can be exposed (or firewalled) separately from the UI/JSON API.
+		// The first server to return takes the process down, mirroring the
+		// pre-existing single-server behavior of cobra.CheckErr(web.Start...).
+		errCh := make(chan error, 2)
+		go func() { errCh <- web.Start(viper.GetString("server-port")) }()
+		go func() { errCh <- mcp.Start(viper.GetString("mcp-port")) }()
+		cobra.CheckErr(<-errCh)
 	},
 }
 
@@ -64,6 +78,7 @@ func init() {
 
 	rootCmd.PersistentFlags().String("log-level", "info", "The log-level for the application, can be one of info, warn, error, debug.")
 	rootCmd.PersistentFlags().Uint16("server-port", 8080, "The port the metrics server binds to.")
+	rootCmd.PersistentFlags().Uint16("mcp-port", 8081, "The port the Model Context Protocol (MCP) server binds to. Served at the /mcp path over Streamable HTTP.")
 	rootCmd.PersistentFlags().String("kubeconfig", "", "The path to a kubeconfig. Assumes in-cluster configuration if left blank.")
 	rootCmd.PersistentFlags().String("db-path", "./", "The path to the directory containing the sqlite database.")
 
@@ -77,6 +92,11 @@ func init() {
 	err = viper.BindPFlag("server-port", rootCmd.PersistentFlags().Lookup("server-port"))
 	if err != nil {
 		log.Fatal("Error binding server-port flag to key", "error", err)
+	}
+
+	err = viper.BindPFlag("mcp-port", rootCmd.PersistentFlags().Lookup("mcp-port"))
+	if err != nil {
+		log.Fatal("Error binding mcp-port flag to key", "error", err)
 	}
 
 	err = viper.BindPFlag("kubeconfig", rootCmd.PersistentFlags().Lookup("kubeconfig"))

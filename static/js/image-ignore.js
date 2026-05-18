@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
             submitBtn.disabled = true;
             
             // Send request to server
-            fetch('/ignore/bulk', {
+            fetch('/api/v1/ignores', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -283,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 registry: actualRegistry,
                 repository: repository || '',
                 tag: tag || '',
-                cve_id: cveId
+                cve_ids: [cveId]
             };
             
             // Show loading state
@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
             button.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>';
             
             // Send DELETE request to server
-            fetch('/ignore', {
+            fetch('/api/v1/ignores', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',

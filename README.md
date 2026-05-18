@@ -20,6 +20,10 @@ trivy-operator-explorer \
 trivy-operator-explorer
 ```
 
+## JSON API
+
+A JSON API mirroring every HTML page is exposed under `/api/v1/...`, along with CVE-ignore management and a machine-readable OpenAPI 3 spec at `/api/v1/openapi.json`. See [docs/API.md](docs/API.md) for the full route list and examples.
+
 ## TODO
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) if you'd like to contribute an item on this list. Please make an Issue if you would like to see something added to this list.

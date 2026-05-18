@@ -39,6 +39,12 @@ func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters, ignoredCVE
 
 		// Construct image data from this VulnerabilityReport
 		i := View{
+			Ref: utils.AssembleImageRef(
+				item.Report.Registry.Server,
+				item.Report.Artifact.Repository,
+				item.Report.Artifact.Tag,
+				item.Report.Artifact.Digest,
+			),
 			Registry:   utils.FormatPrettyImageRegistry(item.Report.Registry.Server),
 			Repository: utils.FormatPrettyImageRepo(item.Report.Artifact.Repository),
 			Tag:        item.Report.Artifact.Tag,
@@ -66,6 +72,7 @@ func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters, ignoredCVE
 				}
 			}
 
+			class, packageType := utils.DeriveVulnerabilityClassAndPackageType(v)
 			vuln := Vulnerability{
 				ID:                v.VulnerabilityID,
 				Severity:          string(v.Severity),
@@ -75,6 +82,10 @@ func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters, ignoredCVE
 				Title:             v.Title,
 				VulnerableVersion: v.InstalledVersion,
 				FixedVersion:      v.FixedVersion,
+				Class:             class,
+				PackageType:       packageType,
+				PkgPath:           v.PkgPath,
+				PkgPURL:           v.PkgPURL,
 				IsIgnored:         isIgnored,
 				IgnoreReason:      ignoredReason,
 			}
