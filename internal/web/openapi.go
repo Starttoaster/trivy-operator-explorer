@@ -1,7 +1,7 @@
 package web
 
 import (
-	_ "embed"
+	_ "embed" // embed for the openapi spec
 	"net/http"
 )
 
