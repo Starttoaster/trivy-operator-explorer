@@ -96,6 +96,28 @@ ingress:
   # Switch between different Ingress rule styles. Can be one of "rules", or "defaultBackend"
   ruleType: "rules"
 
+# Opt-in Ingress for the MCP server. Disabled by default. When enabled, this
+# creates a separate Ingress that routes to service.mcpPort. There is no
+# authentication on the MCP endpoint, so rely on network policy / ingress auth
+# to gate access.
+mcpIngress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: mcp.chart-example.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: chart-example-mcp-tls
+  #    hosts:
+  #      - mcp.chart-example.local
+  # Switch between different Ingress rule styles. Can be one of "rules", or "defaultBackend"
+  ruleType: "rules"
+
 resources: 
   # Change these as needed. Larger clusters with more resources may run into issues with too low of limits.
   limits:
