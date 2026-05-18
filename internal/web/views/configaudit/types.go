@@ -5,18 +5,18 @@ type View Data
 
 // Data data about a role and its vulnerabilities
 type Data struct {
-	Name            string
-	Namespace       string
-	Kind            string
-	Vulnerabilities []Vulnerability
+	Name            string          `json:"name"`
+	Namespace       string          `json:"namespace"`
+	Kind            string          `json:"kind"`
+	Vulnerabilities []Vulnerability `json:"vulnerabilities"`
 }
 
 // Vulnerability data related to a role
 type Vulnerability struct {
-	ID          string
-	URL         string
-	Severity    string
-	Title       string
-	Description string
-	Message     string
+	ID          string `json:"id"`
+	URL         string `json:"url"`
+	Severity    string `json:"severity"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Message     string `json:"message"`
 }

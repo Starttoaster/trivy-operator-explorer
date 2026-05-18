@@ -5,15 +5,15 @@ type View Data
 
 // Data contains data about an image and its exposed secrets
 type Data struct {
-	Name    string // name of the image
-	Digest  string // sha digest of the image
-	Secrets []Secret
+	Name    string   `json:"name"`   // name of the image
+	Digest  string   `json:"digest"` // sha digest of the image
+	Secrets []Secret `json:"secrets"`
 }
 
 // Secret data related to an exposed secret
 type Secret struct {
-	Severity string
-	Title    string
-	Target   string
-	Match    string
+	Severity string `json:"severity"`
+	Title    string `json:"title"`
+	Target   string `json:"target"`
+	Match    string `json:"match"`
 }

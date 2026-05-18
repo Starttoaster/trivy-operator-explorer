@@ -5,17 +5,17 @@ type View []Data
 
 // Data data about a cluster controllers and their vulnerabilities
 type Data struct {
-	Name           string
-	Kind           string
-	CriticalChecks []Check
-	HighChecks     []Check
-	MediumChecks   []Check
-	LowChecks      []Check
+	Name           string  `json:"name"`
+	Kind           string  `json:"kind"`
+	CriticalChecks []Check `json:"critical_checks"`
+	HighChecks     []Check `json:"high_checks"`
+	MediumChecks   []Check `json:"medium_checks"`
+	LowChecks      []Check `json:"low_checks"`
 }
 
 // Check data related to a cluster controller audit
 type Check struct {
-	ID          string
-	Title       string
-	Description string
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
 }

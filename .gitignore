@@ -1,4 +1,5 @@
 /trivy-operator-explorer
+/trivy-explorer.sqlite
 /bin
 /testdata.txt
 /.idea

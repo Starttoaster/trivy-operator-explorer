@@ -5,36 +5,36 @@ type View Data
 
 // Data contains data about image vulnerabilities and metadata about the Resources running that image
 type Data struct {
-	Registry           string // registry server (e.g., index.docker.io)
-	Repository         string // repository name
-	Tag                string // image tag
-	Digest             string // sha digest of the image
-	OSFamily           string // distro name like "debian" or "alpine"
-	OSVersion          string // distro version like "12.6"
-	OSEndOfServiceLife string // end of service life data
-	Vulnerabilities    []Vulnerability
+	Registry           string          `json:"registry"`               // registry server (e.g., index.docker.io)
+	Repository         string          `json:"repository"`             // repository name
+	Tag                string          `json:"tag"`                    // image tag
+	Digest             string          `json:"digest"`                 // sha digest of the image
+	OSFamily           string          `json:"os_family"`              // distro name like "debian" or "alpine"
+	OSVersion          string          `json:"os_version"`             // distro version like "12.6"
+	OSEndOfServiceLife string          `json:"os_end_of_service_life"` // end of service life data
+	Vulnerabilities    []Vulnerability `json:"vulnerabilities"`
 }
 
 // Vulnerability data related to a CVE
 type Vulnerability struct {
 	// CVE ID
-	ID string
+	ID string `json:"id"`
 	// CVE severity level (eg. Critical/High/Medium/Low)
-	Severity string
+	Severity string `json:"severity"`
 	// CVE score from 0-10 with with one decimal place
-	Score float64
+	Score float64 `json:"score"`
 	// URL is the URL to the proper CVE database
-	URL string
+	URL string `json:"url"`
 	// CVE vulnerable resource (eg. curl, libcurl)
-	Resource string
+	Resource string `json:"resource"`
 	// CVE title (eg. libcarlsjr: remote code execution)
-	Title string
+	Title string `json:"title"`
 	// The vulnerable installed resource version
-	VulnerableVersion string
+	VulnerableVersion string `json:"vulnerable_version"`
 	// The version this vulnerability is fixed in
-	FixedVersion string
+	FixedVersion string `json:"fixed_version"`
 	// Whether this CVE is ignored
-	IsIgnored bool
+	IsIgnored bool `json:"is_ignored"`
 	// Reason why this CVE is ignored (if applicable)
-	IgnoreReason string
+	IgnoreReason string `json:"ignore_reason,omitempty"`
 }

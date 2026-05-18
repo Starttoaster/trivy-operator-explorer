@@ -49,6 +49,24 @@ func Start(port string) error {
 	mux.HandleFunc("/role", roleHandler)
 	mux.HandleFunc("/compliancereports", complianceReportsHandler)
 	mux.HandleFunc("/compliancereport", complianceReportHandler)
+
+	// JSON API endpoints (counterparts to the HTML routes above).
+	mux.HandleFunc("/api/v1/", apiIndexHandler)
+	mux.HandleFunc("/api/v1/images", apiImagesHandler)
+	mux.HandleFunc("/api/v1/image", apiImageHandler)
+	mux.HandleFunc("/api/v1/configaudits", apiConfigauditsHandler)
+	mux.HandleFunc("/api/v1/configaudit", apiConfigauditHandler)
+	mux.HandleFunc("/api/v1/clusteraudits", apiClusterauditsHandler)
+	mux.HandleFunc("/api/v1/clusteraudit", apiClusterauditHandler)
+	mux.HandleFunc("/api/v1/clusterroles", apiClusterrolesHandler)
+	mux.HandleFunc("/api/v1/clusterrole", apiClusterroleHandler)
+	mux.HandleFunc("/api/v1/exposedsecrets", apiExposedsecretsHandler)
+	mux.HandleFunc("/api/v1/exposedsecret", apiExposedsecretHandler)
+	mux.HandleFunc("/api/v1/roles", apiRolesHandler)
+	mux.HandleFunc("/api/v1/role", apiRoleHandler)
+	mux.HandleFunc("/api/v1/compliancereports", apiComplianceReportsHandler)
+	mux.HandleFunc("/api/v1/compliancereport", apiComplianceReportHandler)
+
 	// TODO just serve the js and css directories in static
 	// this serves the html templates for no reason
 	mux.Handle("/static/", http.FileServer(http.FS(content.Static)))
