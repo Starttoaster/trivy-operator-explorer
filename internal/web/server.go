@@ -1,7 +1,6 @@
 package web
 
 import (
-	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -35,8 +34,6 @@ func Start(port string) error {
 	mux.HandleFunc("/", indexHandler)
 	mux.HandleFunc("/images", imagesHandler)
 	mux.HandleFunc("/image", imageHandler)
-	mux.HandleFunc("/ignore", ignoreHandler)
-	mux.HandleFunc("/ignore/bulk", bulkIgnoreHandler)
 	mux.HandleFunc("/configaudits", configauditsHandler)
 	mux.HandleFunc("/configaudit", configauditHandler)
 	mux.HandleFunc("/clusteraudits", clusterauditsHandler)
@@ -51,21 +48,27 @@ func Start(port string) error {
 	mux.HandleFunc("/compliancereport", complianceReportHandler)
 
 	// JSON API endpoints (counterparts to the HTML routes above).
-	mux.HandleFunc("/api/v1/", apiIndexHandler)
-	mux.HandleFunc("/api/v1/images", apiImagesHandler)
-	mux.HandleFunc("/api/v1/image", apiImageHandler)
-	mux.HandleFunc("/api/v1/configaudits", apiConfigauditsHandler)
-	mux.HandleFunc("/api/v1/configaudit", apiConfigauditHandler)
-	mux.HandleFunc("/api/v1/clusteraudits", apiClusterauditsHandler)
-	mux.HandleFunc("/api/v1/clusteraudit", apiClusterauditHandler)
-	mux.HandleFunc("/api/v1/clusterroles", apiClusterrolesHandler)
-	mux.HandleFunc("/api/v1/clusterrole", apiClusterroleHandler)
-	mux.HandleFunc("/api/v1/exposedsecrets", apiExposedsecretsHandler)
-	mux.HandleFunc("/api/v1/exposedsecret", apiExposedsecretHandler)
-	mux.HandleFunc("/api/v1/roles", apiRolesHandler)
-	mux.HandleFunc("/api/v1/role", apiRoleHandler)
-	mux.HandleFunc("/api/v1/compliancereports", apiComplianceReportsHandler)
-	mux.HandleFunc("/api/v1/compliancereport", apiComplianceReportHandler)
+	// Read endpoints are wrapped in methodGet so non-GET requests get a
+	// well-formed 405 response with an Allow header. /api/v1/ignores does
+	// its own method-based dispatch and is intentionally left unwrapped.
+	mux.HandleFunc("/api/v1/", methodGet(apiIndexHandler))
+	mux.HandleFunc("/api/v1/health", methodGet(apiHealthHandler))
+	mux.HandleFunc("/api/v1/openapi.json", methodGet(apiOpenAPIHandler))
+	mux.HandleFunc("/api/v1/images", methodGet(apiImagesHandler))
+	mux.HandleFunc("/api/v1/image", methodGet(apiImageHandler))
+	mux.HandleFunc("/api/v1/configaudits", methodGet(apiConfigauditsHandler))
+	mux.HandleFunc("/api/v1/configaudit", methodGet(apiConfigauditHandler))
+	mux.HandleFunc("/api/v1/clusteraudits", methodGet(apiClusterauditsHandler))
+	mux.HandleFunc("/api/v1/clusteraudit", methodGet(apiClusterauditHandler))
+	mux.HandleFunc("/api/v1/clusterroles", methodGet(apiClusterrolesHandler))
+	mux.HandleFunc("/api/v1/clusterrole", methodGet(apiClusterroleHandler))
+	mux.HandleFunc("/api/v1/exposedsecrets", methodGet(apiExposedsecretsHandler))
+	mux.HandleFunc("/api/v1/exposedsecret", methodGet(apiExposedsecretHandler))
+	mux.HandleFunc("/api/v1/roles", methodGet(apiRolesHandler))
+	mux.HandleFunc("/api/v1/role", methodGet(apiRoleHandler))
+	mux.HandleFunc("/api/v1/compliancereports", methodGet(apiComplianceReportsHandler))
+	mux.HandleFunc("/api/v1/compliancereport", methodGet(apiComplianceReportHandler))
+	mux.HandleFunc("/api/v1/ignores", ignoresRouter)
 
 	// TODO just serve the js and css directories in static
 	// this serves the html templates for no reason
@@ -287,103 +290,6 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error, check server logs", http.StatusInternalServerError)
 		return
 	}
-}
-
-func ignoreHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost && r.Method != http.MethodDelete {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Parse JSON request body for unignore
-	var requestData db.IgnoredImageVulnerability
-	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
-		log.Logger.Error("Failed to decode unignore request", "error", err)
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
-		return
-	}
-
-	// Validate always required fields
-	if requestData.Repository == "" || requestData.Tag == "" || requestData.CVEID == "" {
-		http.Error(w, "Missing required fields", http.StatusBadRequest)
-		return
-	}
-
-	// Set default registry for Docker Hub if empty
-	if requestData.Registry == "" {
-		requestData.Registry = "index.docker.io"
-	}
-
-	// Handle both POST (ignore) and DELETE (unignore) requests
-	if r.Method == http.MethodPost {
-		// Validate additional required fields
-		if requestData.Reason == "" {
-			http.Error(w, "Missing required fields", http.StatusBadRequest)
-			return
-		}
-
-		// Insert into database
-		if err := db.InsertIgnoredImageVulnerability(requestData); err != nil {
-			log.Logger.Error("Failed to insert ignored vulnerability", "error", err)
-			http.Error(w, "Failed to save ignore request", http.StatusInternalServerError)
-			return
-		}
-
-	} else if r.Method == http.MethodDelete {
-		// Delete from database
-		if err := db.DeleteIgnoredImageVulnerability(requestData.Registry, requestData.Repository, requestData.Tag, requestData.CVEID); err != nil {
-			log.Logger.Error("Failed to delete ignored vulnerability", "error", err)
-			http.Error(w, "Failed to unignore CVE", http.StatusInternalServerError)
-			return
-		}
-	}
-
-	w.WriteHeader(http.StatusOK)
-}
-
-// BulkIgnoreRequest represents a bulk ignore request
-type BulkIgnoreRequest struct {
-	Registry   string   `json:"registry"`
-	Repository string   `json:"repository"`
-	Tag        string   `json:"tag"`
-	CVEIDs     []string `json:"cve_ids"`
-	Reason     string   `json:"reason"`
-}
-
-func bulkIgnoreHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Parse JSON request body
-	var requestData BulkIgnoreRequest
-	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
-		log.Logger.Error("Failed to decode bulk ignore request", "error", err)
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
-		return
-	}
-
-	// Validate required fields
-	if requestData.Repository == "" || requestData.Tag == "" || len(requestData.CVEIDs) == 0 || requestData.Reason == "" {
-		http.Error(w, "Missing required fields", http.StatusBadRequest)
-		return
-	}
-
-	// Set default registry for Docker Hub if empty
-	registry := requestData.Registry
-	if registry == "" {
-		registry = "index.docker.io"
-	}
-
-	// Insert into database using bulk insert
-	if err := db.BulkInsertIgnoredImageVulnerabilities(registry, requestData.Repository, requestData.Tag, requestData.Reason, requestData.CVEIDs); err != nil {
-		log.Logger.Error("Failed to bulk insert ignored vulnerabilities", "error", err)
-		http.Error(w, "Failed to save bulk ignore request", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
 }
 
 func rolesHandler(w http.ResponseWriter, r *http.Request) {
@@ -845,7 +751,12 @@ func complianceReportHandler(w http.ResponseWriter, r *http.Request) {
 		log.Logger.Error("error getting ComplianceReports", "error", err.Error())
 		return
 	}
-	complianceView := complianceview.GetSingleReportData(complianceData, id, severity)
+	complianceView, found := complianceview.GetSingleReportData(complianceData, id, severity)
+	if !found {
+		log.Logger.Error("compliance report id did not match any known report", "id", id)
+		http.NotFound(w, r)
+		return
+	}
 
 	err = tmpl.Execute(w, complianceView)
 	if err != nil {

@@ -16,6 +16,28 @@ import (
 type Filters struct {
 	HasFix      bool
 	ShowIgnored bool
+
+	// Image-level filters applied as a post-aggregation pass after vulnerabilities
+	// have been collected. Empty / nil values match anything.
+
+	// Severity, when non-empty, restricts results to images that contain at
+	// least one non-ignored vulnerability of the given severity. Comparison is
+	// case-insensitive (e.g. "critical" matches "CRITICAL").
+	Severity string
+
+	// OSFamily, when non-empty, restricts results to images whose detected
+	// OS family matches (case-insensitive, exact match).
+	OSFamily string
+
+	// EOSL is tri-state: nil means "no filter". true keeps only images whose
+	// OS is end-of-service-life; false keeps only images whose OS is not EOSL.
+	// Unscanned images have no OS metadata and are excluded by any non-nil EOSL.
+	EOSL *bool
+
+	// CVEIDs, when non-empty, restricts results to images that contain *all*
+	// of the listed CVE IDs (logical AND). Ignored CVEs only count when
+	// ShowIgnored is true (matching the existing per-image behavior).
+	CVEIDs []string
 }
 
 // GetView converts some report data to the /images view
@@ -45,6 +67,12 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 		// If we make it here, the image wasn't in the map yet
 		// Process all image metadata
 		image := Data{
+			Ref: utils.AssembleImageRef(
+				item.Report.Registry.Server,
+				item.Report.Artifact.Repository,
+				item.Report.Artifact.Tag,
+				item.Report.Artifact.Digest,
+			),
 			Registry:  utils.FormatPrettyImageRegistry(item.Report.Registry.Server),
 			Name:      utils.FormatPrettyImageRepo(item.Report.Artifact.Repository),
 			Tag:       item.Report.Artifact.Tag,
@@ -157,6 +185,7 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 				resourceData[r] = struct{}{}
 			}
 			iMap[k] = Data{
+				Ref:       utils.AssembleImageRef("", v.Name, v.Tag, v.Digest),
 				Name:      v.Name,
 				Tag:       v.Tag,
 				Digest:    v.Digest,
@@ -168,12 +197,76 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 
 	var i View
 	for _, v := range iMap {
+		if !matchesImageLevelFilters(v, filters) {
+			continue
+		}
 		i = append(i, v)
 	}
 
 	i = sortView(i)
 
 	return i
+}
+
+// matchesImageLevelFilters returns true if the image satisfies the image-level
+// filters (Severity, OSFamily, EOSL, CVEIDs). It is the post-aggregation pass
+// referenced in Filters' documentation.
+func matchesImageLevelFilters(d Data, f Filters) bool {
+	if f.Severity != "" {
+		hasMatch := false
+		switch strings.ToLower(f.Severity) {
+		case "critical":
+			hasMatch = len(d.CriticalVulnerabilities) > 0
+		case "high":
+			hasMatch = len(d.HighVulnerabilities) > 0
+		case "medium":
+			hasMatch = len(d.MediumVulnerabilities) > 0
+		case "low":
+			hasMatch = len(d.LowVulnerabilities) > 0
+		}
+		if !hasMatch {
+			return false
+		}
+	}
+
+	if f.OSFamily != "" {
+		if !strings.EqualFold(d.OSFamily, f.OSFamily) {
+			return false
+		}
+	}
+
+	if f.EOSL != nil {
+		isEOSL := d.OSEndOfServiceLife == "true"
+		if isEOSL != *f.EOSL {
+			return false
+		}
+	}
+
+	if len(f.CVEIDs) > 0 {
+		present := make(map[string]struct{})
+		for _, v := range d.CriticalVulnerabilities {
+			present[v.ID] = struct{}{}
+		}
+		for _, v := range d.HighVulnerabilities {
+			present[v.ID] = struct{}{}
+		}
+		for _, v := range d.MediumVulnerabilities {
+			present[v.ID] = struct{}{}
+		}
+		for _, v := range d.LowVulnerabilities {
+			present[v.ID] = struct{}{}
+		}
+		for _, want := range f.CVEIDs {
+			if want == "" {
+				continue
+			}
+			if _, ok := present[want]; !ok {
+				return false
+			}
+		}
+	}
+
+	return true
 }
 
 func sortView(i View) View {

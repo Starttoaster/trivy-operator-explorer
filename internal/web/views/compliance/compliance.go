@@ -94,15 +94,20 @@ func GetView(data *v1alpha1.ClusterComplianceReportList) View {
 	return r
 }
 
-// GetSingleReportData converts some report data to the /compliancereport view
-func GetSingleReportData(data *v1alpha1.ClusterComplianceReportList, id string, severity *string) Data {
-	var r Data
+// GetSingleReportData converts some report data to the /compliancereport view.
+// Returns (data, true) if a report with the given id was found, otherwise (zero, false).
+func GetSingleReportData(data *v1alpha1.ClusterComplianceReportList, id string, severity *string) (Data, bool) {
+	var (
+		r     Data
+		found bool
+	)
 
 	for _, item := range data.Items {
 		// Make sure we're looking at the right report ID
 		if item.Spec.Compliance.ID != id {
 			continue
 		}
+		found = true
 
 		// Create map of map[id]Check
 		checksMap := make(map[string]Check)
@@ -191,5 +196,5 @@ func GetSingleReportData(data *v1alpha1.ClusterComplianceReportList, id string, 
 		return r.Checks[i].TotalFailed != nil
 	})
 
-	return r
+	return r, found
 }

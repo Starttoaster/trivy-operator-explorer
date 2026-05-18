@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/starttoaster/trivy-operator-explorer/internal/db"
 	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
 	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
+	"github.com/starttoaster/trivy-operator-explorer/internal/version"
 	clusterauditview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusteraudit"
 	clusterauditsview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusteraudits"
 	clusterroleview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusterrole"
@@ -26,6 +26,18 @@ import (
 	rolesview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/roles"
 )
 
+// healthResponse is the body returned by GET /api/v1/health.
+type healthResponse struct {
+	Status  string `json:"status"`
+	Version string `json:"version"`
+}
+
+// apiHealthHandler is a cheap liveness probe. It deliberately does not touch
+// Kubernetes so the result is stable across cluster reachability hiccups.
+func apiHealthHandler(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, healthResponse{Status: "ok", Version: version.Version})
+}
+
 // writeJSON serializes body to JSON and writes it to w with the given status.
 func writeJSON(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -38,6 +50,21 @@ func writeJSON(w http.ResponseWriter, status int, body any) {
 // writeJSONError writes a standardized JSON error body.
 func writeJSONError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]string{"error": msg})
+}
+
+// methodGet returns an http.HandlerFunc that responds with 405 + JSON for any
+// HTTP method other than GET (and HEAD, which Go's net/http normally serves
+// automatically as a GET without a body). It exists so the read-only /api/v1/*
+// endpoints can self-document their method.
+func methodGet(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			w.Header().Set("Allow", "GET")
+			writeJSONError(w, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
+		h(w, r)
+	}
 }
 
 // parseBoolQuery parses an optional bool query parameter, returning false if
@@ -86,6 +113,16 @@ func apiImagesHandler(w http.ResponseWriter, r *http.Request) {
 	hasFixBool := parseBoolQuery("hasfix", q.Get("hasfix"))
 	showIgnoredBool := parseBoolQuery("showignored", q.Get("showignored"))
 
+	var eosl *bool
+	if raw := q.Get("eosl"); raw != "" {
+		v, err := strconv.ParseBool(raw)
+		if err != nil {
+			log.Logger.Warn("could not parse eosl query parameter to bool type, ignoring filter", "raw", raw, "error", err.Error())
+		} else {
+			eosl = &v
+		}
+	}
+
 	data, err := kube.GetVulnerabilityReportList()
 	if err != nil {
 		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
@@ -100,6 +137,10 @@ func apiImagesHandler(w http.ResponseWriter, r *http.Request) {
 	view := imagesview.GetView(data, imagesMap, imagesview.Filters{
 		HasFix:      hasFixBool,
 		ShowIgnored: showIgnoredBool,
+		Severity:    q.Get("severity"),
+		OSFamily:    q.Get("os_family"),
+		EOSL:        eosl,
+		CVEIDs:      q["cve"],
 	})
 	writeJSON(w, http.StatusOK, view)
 }
@@ -107,23 +148,44 @@ func apiImagesHandler(w http.ResponseWriter, r *http.Request) {
 func apiImageHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 
-	imageRepository := q.Get("repository")
-	if imageRepository == "" {
-		writeJSONError(w, http.StatusBadRequest, "missing required query parameter: repository")
-		return
+	var (
+		imageRegistry   string
+		imageRepository string
+		imageTag        string
+		imageDigest     string
+	)
+
+	// Prefer ?ref= when supplied; otherwise fall back to the split params.
+	if ref := q.Get("ref"); ref != "" {
+		var err error
+		imageRegistry, imageRepository, imageTag, imageDigest, err = utils.ParseImageRef(ref)
+		if err != nil {
+			writeJSONError(w, http.StatusBadRequest, "invalid ref: "+err.Error())
+			return
+		}
+		if imageDigest == "" {
+			writeJSONError(w, http.StatusBadRequest, "ref must include an @digest")
+			return
+		}
+	} else {
+		imageRepository = q.Get("repository")
+		if imageRepository == "" {
+			writeJSONError(w, http.StatusBadRequest, "missing required query parameter: repository (or pass ref)")
+			return
+		}
+		imageDigest = q.Get("digest")
+		if imageDigest == "" {
+			writeJSONError(w, http.StatusBadRequest, "missing required query parameter: digest (or pass ref)")
+			return
+		}
+		imageTag = q.Get("tag")
+		imageRegistry = q.Get("registry")
+		if imageRegistry == "" {
+			imageRegistry = "index.docker.io"
+		}
 	}
-	imageTag := q.Get("tag")
-	imageDigest := q.Get("digest")
-	if imageDigest == "" {
-		writeJSONError(w, http.StatusBadRequest, "missing required query parameter: digest")
-		return
-	}
-	imageRegistry := q.Get("registry")
-	if imageRegistry == "" {
-		imageRegistry = "index.docker.io"
-	}
+
 	severity := q.Get("severity")
-	resources := q.Get("resources")
 	hasFixBool := parseBoolQuery("hasfix", q.Get("hasfix"))
 	showIgnoredBool := parseBoolQuery("showignored", q.Get("showignored"))
 
@@ -153,7 +215,7 @@ func apiImageHandler(w http.ResponseWriter, r *http.Request) {
 		Severity:    severity,
 		HasFix:      hasFixBool,
 		ShowIgnored: showIgnoredBool,
-		Resources:   strings.Split(resources, ","),
+		Resources:   q["resources"],
 	}, ignoredCVEs)
 	if !found {
 		writeJSONError(w, http.StatusNotFound, "image not found")
@@ -394,6 +456,98 @@ func apiComplianceReportsHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, complianceview.GetView(data))
 }
 
+// ignoresRouter dispatches /api/v1/ignores by HTTP method.
+func ignoresRouter(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		apiListIgnoresHandler(w, r)
+	case http.MethodPost:
+		apiCreateIgnoresHandler(w, r)
+	case http.MethodDelete:
+		apiDeleteIgnoresHandler(w, r)
+	default:
+		w.Header().Set("Allow", "GET, POST, DELETE")
+		writeJSONError(w, http.StatusMethodNotAllowed, "method not allowed")
+	}
+}
+
+// ignoresMutationRequest is the shared request body for POST and DELETE on
+// /api/v1/ignores. For POST, Reason is required and CVEIDs must be non-empty.
+// For DELETE, Reason is unused and CVEIDs must be non-empty.
+type ignoresMutationRequest struct {
+	Registry   string   `json:"registry"`
+	Repository string   `json:"repository"`
+	Tag        string   `json:"tag"`
+	CVEIDs     []string `json:"cve_ids"`
+	Reason     string   `json:"reason,omitempty"`
+}
+
+func apiListIgnoresHandler(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	rows, err := db.ListIgnoredImageVulnerabilities(db.IgnoredImageVulnerabilityFilter{
+		Registry:   q.Get("registry"),
+		Repository: q.Get("repository"),
+		Tag:        q.Get("tag"),
+	})
+	if err != nil {
+		log.Logger.Error("failed to list ignored image vulnerabilities", "error", err.Error())
+		writeJSONError(w, http.StatusInternalServerError, "failed to list ignored vulnerabilities")
+		return
+	}
+	if rows == nil {
+		rows = []db.IgnoredImageVulnerability{}
+	}
+	writeJSON(w, http.StatusOK, rows)
+}
+
+func apiCreateIgnoresHandler(w http.ResponseWriter, r *http.Request) {
+	var req ignoresMutationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Logger.Error("failed to decode ignores POST body", "error", err)
+		writeJSONError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if req.Repository == "" || req.Tag == "" || len(req.CVEIDs) == 0 || req.Reason == "" {
+		writeJSONError(w, http.StatusBadRequest, "missing required fields (repository, tag, cve_ids, reason)")
+		return
+	}
+	registry := req.Registry
+	if registry == "" {
+		registry = "index.docker.io"
+	}
+	inserted, err := db.BulkInsertIgnoredImageVulnerabilities(registry, req.Repository, req.Tag, req.Reason, req.CVEIDs)
+	if err != nil {
+		log.Logger.Error("failed to insert ignored vulnerabilities", "error", err)
+		writeJSONError(w, http.StatusInternalServerError, "failed to insert ignored vulnerabilities")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]int64{"inserted": inserted})
+}
+
+func apiDeleteIgnoresHandler(w http.ResponseWriter, r *http.Request) {
+	var req ignoresMutationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Logger.Error("failed to decode ignores DELETE body", "error", err)
+		writeJSONError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+	if req.Repository == "" || req.Tag == "" || len(req.CVEIDs) == 0 {
+		writeJSONError(w, http.StatusBadRequest, "missing required fields (repository, tag, cve_ids)")
+		return
+	}
+	registry := req.Registry
+	if registry == "" {
+		registry = "index.docker.io"
+	}
+	deleted, err := db.BulkDeleteIgnoredImageVulnerabilities(registry, req.Repository, req.Tag, req.CVEIDs)
+	if err != nil {
+		log.Logger.Error("failed to delete ignored vulnerabilities", "error", err)
+		writeJSONError(w, http.StatusInternalServerError, "failed to delete ignored vulnerabilities")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]int64{"deleted": deleted})
+}
+
 func apiComplianceReportHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	id := q.Get("id")
@@ -413,5 +567,10 @@ func apiComplianceReportHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusInternalServerError, "failed to list compliance reports")
 		return
 	}
-	writeJSON(w, http.StatusOK, complianceview.GetSingleReportData(data, id, severity))
+	report, found := complianceview.GetSingleReportData(data, id, severity)
+	if !found {
+		writeJSONError(w, http.StatusNotFound, "compliance report not found")
+		return
+	}
+	writeJSON(w, http.StatusOK, report)
 }

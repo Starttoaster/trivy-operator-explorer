@@ -39,6 +39,12 @@ func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters, ignoredCVE
 
 		// Construct image data from this VulnerabilityReport
 		i := View{
+			Ref: utils.AssembleImageRef(
+				item.Report.Registry.Server,
+				item.Report.Artifact.Repository,
+				item.Report.Artifact.Tag,
+				item.Report.Artifact.Digest,
+			),
 			Registry:   utils.FormatPrettyImageRegistry(item.Report.Registry.Server),
 			Repository: utils.FormatPrettyImageRepo(item.Report.Artifact.Repository),
 			Tag:        item.Report.Artifact.Tag,

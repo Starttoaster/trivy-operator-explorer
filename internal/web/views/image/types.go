@@ -5,6 +5,7 @@ type View Data
 
 // Data contains data about image vulnerabilities and metadata about the Resources running that image
 type Data struct {
+	Ref                string          `json:"ref"`                    // canonical fully-qualified image ref accepted by /api/v1/image?ref=...
 	Registry           string          `json:"registry"`               // registry server (e.g., index.docker.io)
 	Repository         string          `json:"repository"`             // repository name
 	Tag                string          `json:"tag"`                    // image tag
