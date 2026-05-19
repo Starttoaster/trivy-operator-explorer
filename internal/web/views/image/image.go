@@ -26,29 +26,38 @@ type Filters struct {
 // returns view data and "true" if the image was found in the report list
 func GetView(data *v1alpha1.VulnerabilityReportList, filters Filters, ignoredCVEs map[string]db.IgnoredImageVulnerability) (View, bool) {
 	for _, item := range data.Items {
-		// If this report is for the image in question, compile its data and return it
-		itemImageName := utils.AssembleImageFullName(
-			utils.FormatPrettyImageRegistry(item.Report.Registry.Server),
-			utils.FormatPrettyImageRepo(item.Report.Artifact.Repository),
+		// Some trivy-operator reports stuff the full image reference into the
+		// Tag field; normalize the artifact spec before we render or key off it.
+		registry, repository, tag, digest := utils.NormalizeArtifact(
+			item.Report.Registry.Server,
+			item.Report.Artifact.Repository,
 			item.Report.Artifact.Tag,
 			item.Report.Artifact.Digest,
 		)
-		if filters.Name != itemImageName || filters.Digest != item.Report.Artifact.Digest {
+
+		// If this report is for the image in question, compile its data and return it
+		itemImageName := utils.AssembleImageFullName(
+			utils.FormatPrettyImageRegistry(registry),
+			utils.FormatPrettyImageRepo(repository),
+			tag,
+			digest,
+		)
+		if filters.Name != itemImageName || filters.Digest != digest {
 			continue
 		}
 
 		// Construct image data from this VulnerabilityReport
 		i := View{
 			Ref: utils.AssembleImageRef(
-				item.Report.Registry.Server,
-				item.Report.Artifact.Repository,
-				item.Report.Artifact.Tag,
-				item.Report.Artifact.Digest,
+				registry,
+				repository,
+				tag,
+				digest,
 			),
-			Registry:   utils.FormatPrettyImageRegistry(item.Report.Registry.Server),
-			Repository: utils.FormatPrettyImageRepo(item.Report.Artifact.Repository),
-			Tag:        item.Report.Artifact.Tag,
-			Digest:     item.Report.Artifact.Digest,
+			Registry:   utils.FormatPrettyImageRegistry(registry),
+			Repository: utils.FormatPrettyImageRepo(repository),
+			Tag:        tag,
+			Digest:     digest,
 			OSFamily:   string(item.Report.OS.Family),
 			OSVersion:  item.Report.OS.Name,
 		}

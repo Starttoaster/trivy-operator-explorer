@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
 )
 
@@ -21,14 +22,23 @@ type Filters struct {
 // returns view data and "true" if the image was found in the report list
 func GetView(data *v1alpha1.ExposedSecretReportList, filters Filters) (View, bool) {
 	for _, item := range data.Items {
-		itemImageName := getImageNameFromLabels(item.Report.Registry.Server, item.Report.Artifact.Repository, item.Report.Artifact.Tag)
-		if filters.Name != itemImageName || filters.Digest != item.Report.Artifact.Digest {
+		// Some trivy-operator reports stuff the full image reference into the
+		// Tag field; normalize the artifact spec before we render or key off it.
+		registry, repository, tag, digest := utils.NormalizeArtifact(
+			item.Report.Registry.Server,
+			item.Report.Artifact.Repository,
+			item.Report.Artifact.Tag,
+			item.Report.Artifact.Digest,
+		)
+
+		itemImageName := getImageNameFromLabels(registry, repository, tag)
+		if filters.Name != itemImageName || filters.Digest != digest {
 			continue
 		}
 
 		i := View{
 			Name:   itemImageName,
-			Digest: item.Report.Artifact.Digest,
+			Digest: digest,
 		}
 
 		for _, v := range item.Report.Secrets {

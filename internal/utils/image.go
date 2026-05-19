@@ -34,6 +34,46 @@ func AssembleImageFullName(registry, repo, tag, digest string) string {
 	return fmt.Sprintf("%s/%s%s", registry, repo, imageSuffix)
 }
 
+// NormalizeArtifact sanitizes the four fields that come back from a
+// trivy-operator VulnerabilityReport's artifact spec
+// (registry.server, artifact.repository, artifact.tag, artifact.digest).
+//
+// Some trivy-operator versions occasionally produce reports whose Tag field
+// contains the entire image reference (e.g. "docker.io/valkey/valkey:9.1-alpine"
+// or even "docker.io/valkey/valkey:9.1-alpine@sha256:...") instead of just the
+// tag ("9.1-alpine"). A valid docker tag cannot contain '/' or ':', so when we
+// see either of those characters in the tag we treat the field as a malformed
+// image reference, parse it, and recover the real tag (and any missing
+// registry / repository / digest).
+//
+// When the report's own registry / repository / digest fields are already
+// populated, we keep them; we only fill in missing values from what we
+// recovered out of the malformed tag.
+func NormalizeArtifact(registry, repository, tag, digest string) (string, string, string, string) {
+	if !strings.ContainsAny(tag, "/:") {
+		return registry, repository, tag, digest
+	}
+
+	parsedRegistry, parsedRepository, parsedTag, parsedDigest, err := ParseImageRef(tag)
+	if err != nil {
+		// We can't recover a tag value from this malformed input, so drop it
+		// rather than letting the bad string flow through into rendered output.
+		return registry, repository, "", digest
+	}
+
+	tag = parsedTag
+	if registry == "" {
+		registry = parsedRegistry
+	}
+	if repository == "" {
+		repository = parsedRepository
+	}
+	if digest == "" {
+		digest = parsedDigest
+	}
+	return registry, repository, tag, digest
+}
+
 // AssembleImageRef returns a canonical, fully-qualified, round-trippable image
 // reference of the form "<registry>/<repository>[:<tag>][@<digest>]".
 // Unlike AssembleImageFullName it always includes the registry (defaulting to
