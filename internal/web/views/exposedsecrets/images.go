@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
+	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 )
 
 // GetView converts some report data to the /exposedsecrets view
