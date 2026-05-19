@@ -171,11 +171,15 @@ func imagesHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Add page type to template data
 	templateData := struct {
-		PageRoute string
-		Data      imagesview.View
+		PageRoute   string
+		HasFix      bool
+		ShowIgnored bool
+		Data        imagesview.View
 	}{
-		PageRoute: "images",
-		Data:      imageData,
+		PageRoute:   "images",
+		HasFix:      hasFixBool,
+		ShowIgnored: showIgnoredBool,
+		Data:        imageData,
 	}
 
 	err = tmpl.Execute(w, templateData)

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
+	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 )
 
 // GetView converts some report data to the /exposedsecrets view
@@ -13,9 +14,17 @@ func GetView(data *v1alpha1.ExposedSecretReportList) View {
 	var i View
 
 	for _, item := range data.Items {
+		// Some trivy-operator reports stuff the full image reference into the
+		// Tag field; normalize the artifact spec before we render or key off it.
+		registry, repository, tag, digest := utils.NormalizeArtifact(
+			item.Report.Registry.Server,
+			item.Report.Artifact.Repository,
+			item.Report.Artifact.Tag,
+			item.Report.Artifact.Digest,
+		)
 		image := Data{
-			Name:   getImageNameFromLabels(item.Report.Registry.Server, item.Report.Artifact.Repository, item.Report.Artifact.Tag),
-			Digest: item.Report.Artifact.Digest,
+			Name:   getImageNameFromLabels(registry, repository, tag),
+			Digest: digest,
 		}
 		resourceData := ResourceMetadata{
 			Kind:      item.ObjectMeta.Labels["trivy-operator.resource.kind"],

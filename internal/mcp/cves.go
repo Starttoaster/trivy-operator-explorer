@@ -93,10 +93,14 @@ func aggregateCVEs(reports *v1alpha1.VulnerabilityReportList, showIgnored bool) 
 
 	out := make(map[string]*cveAggregate)
 	for _, item := range reports.Items {
-		registry := item.Report.Registry.Server
-		repository := item.Report.Artifact.Repository
-		tag := item.Report.Artifact.Tag
-		digest := item.Report.Artifact.Digest
+		// Some trivy-operator reports stuff the full image reference into the
+		// Tag field; normalize the artifact spec before we render or key off it.
+		registry, repository, tag, digest := utils.NormalizeArtifact(
+			item.Report.Registry.Server,
+			item.Report.Artifact.Repository,
+			item.Report.Artifact.Tag,
+			item.Report.Artifact.Digest,
+		)
 
 		// Track which (image, CVE) pairs we've already counted so duplicate
 		// vulnerability rows on the same report don't double-count.

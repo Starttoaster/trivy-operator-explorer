@@ -45,13 +45,22 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 	var iMap = make(map[string]Data)
 
 	for _, item := range data.Items {
+		// Some trivy-operator reports stuff the full image reference into the
+		// Tag field; normalize the artifact spec before we render or key off it.
+		registry, repository, tag, digest := utils.NormalizeArtifact(
+			item.Report.Registry.Server,
+			item.Report.Artifact.Repository,
+			item.Report.Artifact.Tag,
+			item.Report.Artifact.Digest,
+		)
+
 		// Determine if this image is already in the map
 		// We add its resources to the current item in the map if it already exists
 		iMapKey := utils.AssembleImageFullName(
-			utils.FormatPrettyImageRegistry(item.Report.Registry.Server),
-			utils.FormatPrettyImageRepo(item.Report.Artifact.Repository),
-			item.Report.Artifact.Tag,
-			item.Report.Artifact.Digest,
+			utils.FormatPrettyImageRegistry(registry),
+			utils.FormatPrettyImageRepo(repository),
+			tag,
+			digest,
 		)
 		_, ok := iMap[iMapKey]
 		if ok {
@@ -68,15 +77,15 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 		// Process all image metadata
 		image := Data{
 			Ref: utils.AssembleImageRef(
-				item.Report.Registry.Server,
-				item.Report.Artifact.Repository,
-				item.Report.Artifact.Tag,
-				item.Report.Artifact.Digest,
+				registry,
+				repository,
+				tag,
+				digest,
 			),
-			Registry:  utils.FormatPrettyImageRegistry(item.Report.Registry.Server),
-			Name:      utils.FormatPrettyImageRepo(item.Report.Artifact.Repository),
-			Tag:       item.Report.Artifact.Tag,
-			Digest:    item.Report.Artifact.Digest,
+			Registry:  utils.FormatPrettyImageRegistry(registry),
+			Name:      utils.FormatPrettyImageRepo(repository),
+			Tag:       tag,
+			Digest:    digest,
 			OSFamily:  string(item.Report.OS.Family),
 			OSVersion: item.Report.OS.Name,
 		}
@@ -95,7 +104,7 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 		var ignoredCVEs map[string]db.IgnoredImageVulnerability
 		if !filters.ShowIgnored {
 			var err error
-			ignoredCVEs, err = db.GetIgnoredCVEsForImage(item.Report.Registry.Server, image.Name, image.Tag)
+			ignoredCVEs, err = db.GetIgnoredCVEsForImage(registry, image.Name, image.Tag)
 			if err != nil {
 				log.Logger.Error("error getting ignored CVEs", "error", err.Error())
 				// Continue without ignored CVEs rather than failing the request
