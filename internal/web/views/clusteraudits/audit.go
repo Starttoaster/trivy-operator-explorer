@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
+	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 )
 
 // GetView converts some report data to the /roles view
@@ -22,11 +23,12 @@ func GetView(data *v1alpha1.ClusterInfraAssessmentReportList) View {
 		}
 
 		audit := Data{
-			Kind: item.ObjectMeta.Labels["trivy-operator.resource.kind"],
-			Name: name,
+			Cluster: item.ObjectMeta.Labels[utils.ClusterLabel],
+			Kind:    item.ObjectMeta.Labels["trivy-operator.resource.kind"],
+			Name:    name,
 		}
 
-		index, unique := view.isUnique(audit.Name, audit.Kind)
+		index, unique := view.isUnique(audit.Cluster, audit.Name, audit.Kind)
 		if unique {
 			view = append(view, audit)
 			index = len(view) - 1
@@ -58,9 +60,9 @@ func GetView(data *v1alpha1.ClusterInfraAssessmentReportList) View {
 	return view
 }
 
-func (a View) isUnique(name, kind string) (int, bool) {
+func (a View) isUnique(cluster, name, kind string) (int, bool) {
 	for i, audit := range a {
-		if name == audit.Name && kind == audit.Kind {
+		if cluster == audit.Cluster && name == audit.Name && kind == audit.Kind {
 			return i, false
 		}
 	}

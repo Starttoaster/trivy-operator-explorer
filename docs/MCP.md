@@ -1,6 +1,10 @@
 # MCP server
 
-trivy-operator-explorer ships a built-in [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server that exposes the vulnerability and ignore-list data as a small set of generic, composable tools. The server runs in the same process as the UI/JSON API but listens on its own port, so it can be routed, secured, or firewalled separately from the rest of the application.
+The trivy-operator-explorer **frontend** ships a built-in [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server that exposes the vulnerability and ignore-list data as a small set of generic, composable tools. The server runs in the same process as the UI/JSON API but listens on its own port, so it can be routed, secured, or firewalled separately from the rest of the application. Its data comes from the report bundles that collectors write to S3 (see [the README](../README.md)), not directly from a Kubernetes cluster.
+
+### Multi-cluster scoping
+
+Every read tool (`list_images`, `get_image`, `list_cves`, `list_images_with_cve`) accepts an optional `cluster` input. Set it to a cluster name to scope results to that cluster, or omit it to aggregate across all clusters in the bucket. The ignore-list tools are global (not cluster-scoped), matching the sqlite schema.
 
 The tools are intentionally primitives (`list_images`, `get_image`, `list_cves`, `list_images_with_cve`, `list_ignored_cves`, `ignore_cves`, `unignore_cves`) rather than task-specific helpers. An LLM client composes them to answer ad-hoc questions; worked examples are at the bottom of this page.
 
@@ -12,7 +16,7 @@ The server is enabled by default and uses the [Streamable HTTP transport](https:
 | --- | --- | --- | --- |
 | `--mcp-port` | `TRIVY_OPERATOR_EXPLORER_MCP_PORT` | `8081` | TCP port for the MCP listener. |
 
-The UI/JSON API still listens on `--server-port` (default `8080`). The MCP server shares the same kube client and sqlite ignore-list connection, so any change made via `ignore_cves` is immediately visible in the UI and at `/api/v1/ignores`.
+The UI/JSON API still listens on `--server-port` (default `8080`). The MCP server shares the same S3-backed report cache and sqlite ignore-list connection, so any change made via `ignore_cves` is immediately visible in the UI and at `/api/v1/ignores`.
 
 When deployed via the Helm chart in [chart/trivy-operator-explorer](../chart/trivy-operator-explorer), the chart's `Service` exposes both ports (`http` and `mcp`). Override `config.mcp_port` and `service.mcpPort` together to change the MCP port. There is no authentication on the MCP endpoint, so treat it the same way you treat the JSON API and rely on network policy / ingress auth to gate access.
 
@@ -54,7 +58,7 @@ List every container image known to the cluster (scanned by trivy-operator plus 
 
 Each entry in `critical_vulnerabilities` / `high_vulnerabilities` / `medium_vulnerabilities` / `low_vulnerabilities` carries Trivy's classification fields (`class`, `package_type`, `pkg_path`, `pkg_purl`) — same definitions as for `get_image` below — so a single `list_images` call is enough to triage "base-OS CVE vs. application CVE" without falling back to `list_cves`.
 
-Inputs (all optional): `severity`, `has_fix`, `show_ignored`, `os_family`, `eosl` (tri-state), `cve_ids` (logical AND).
+Inputs (all optional): `cluster`, `severity`, `has_fix`, `show_ignored`, `os_family`, `eosl` (tri-state), `cve_ids` (logical AND).
 
 ### `get_image` (read)
 
@@ -68,7 +72,7 @@ These let an LLM distinguish CVEs introduced by the container base OS from those
 
 When the upstream trivy scanner leaves `class` / `package_type` blank but still emits a `pkg_purl`, the explorer derives them from the purl's type prefix (`pkg:apk/...` → `os-pkgs`/`apk`, `pkg:npm/...` → `lang-pkgs`/`node-pkg`, `pkg:pypi/...` → `lang-pkgs`/`python-pkg`, …). This means clients can rely on the two fields being populated for every vulnerability whose purl carries a recognized type, regardless of trivy-operator version.
 
-Inputs: `ref` OR (`repository` + `digest`, with optional `registry` + `tag`). Optional filters: `severity`, `has_fix`, `show_ignored`, `resources`.
+Inputs: `ref` OR (`repository` + `digest`, with optional `registry` + `tag`). Optional filters: `cluster`, `severity`, `has_fix`, `show_ignored`, `resources`.
 
 ### `list_cves` (read)
 
@@ -76,7 +80,7 @@ Cluster-wide CVE rollup. For every unique CVE that appears in any vulnerability 
 
 Top-level `class` and `package_type` on each CVE aggregate are populated using the same purl-fallback as `get_image` / `list_images`, so `list_cves(class="os-pkgs")` and `list_cves(package_type="apk")` filter server-side instead of forcing the client to download every CVE and parse `affected_images[].pkg_purl`. Affected-image entries carry the same fields.
 
-Inputs (all optional): `severity`, `has_fix` (tri-state), `class`, `package_type`, `cve_id` (single-CVE lookup), `show_ignored`, `sort_by`, `limit`.
+Inputs (all optional): `cluster`, `severity`, `has_fix` (tri-state), `class`, `package_type`, `cve_id` (single-CVE lookup), `show_ignored`, `sort_by`, `limit`.
 
 `sort_by` values:
 
@@ -87,7 +91,7 @@ Inputs (all optional): `severity`, `has_fix` (tri-state), `class`, `package_type
 
 ### `list_images_with_cve` (read)
 
-Look up a single CVE by ID and return the per-image affected list. Inputs: `cve_id` (required), `severity` (optional defensive filter), `show_ignored`. Returns `{found, cve}`.
+Look up a single CVE by ID and return the per-image affected list. Inputs: `cve_id` (required), `cluster` (optional), `severity` (optional defensive filter), `show_ignored`. Returns `{found, cve}`.
 
 ### `list_ignored_cves` (read)
 

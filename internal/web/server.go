@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/starttoaster/trivy-operator-explorer/internal/db"
-	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
+	"github.com/starttoaster/trivy-operator-explorer/internal/source"
 	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 	"github.com/starttoaster/trivy-operator-explorer/internal/web/content"
 	clusterauditview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusteraudit"
@@ -53,6 +53,7 @@ func Start(port string) error {
 	// its own method-based dispatch and is intentionally left unwrapped.
 	mux.HandleFunc("/api/v1/", methodGet(apiIndexHandler))
 	mux.HandleFunc("/api/v1/health", methodGet(apiHealthHandler))
+	mux.HandleFunc("/api/v1/clusters", methodGet(apiClustersHandler))
 	mux.HandleFunc("/api/v1/openapi.json", methodGet(apiOpenAPIHandler))
 	mux.HandleFunc("/api/v1/images", methodGet(apiImagesHandler))
 	mux.HandleFunc("/api/v1/image", methodGet(apiImageHandler))
@@ -86,8 +87,10 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cluster := r.URL.Query().Get("cluster")
+
 	// Get vulnerability reports
-	vulnerabilityData, err := kube.GetVulnerabilityReportList()
+	vulnerabilityData, err := source.GetVulnerabilityReportList(cluster)
 	if err != nil {
 		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		return
@@ -95,7 +98,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	imagesView := imagesview.GetView(vulnerabilityData, nil, imagesview.Filters{})
 
 	// Get compliance reports
-	complianceData, err := kube.GetComplianceReportList()
+	complianceData, err := source.GetComplianceReportList(cluster)
 	if err != nil {
 		log.Logger.Error("error getting ComplianceReports", "error", err.Error())
 		return
@@ -152,14 +155,16 @@ func imagesHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	cluster := q.Get("cluster")
+
 	// Get vulnerability reports
-	data, err := kube.GetVulnerabilityReportList()
+	data, err := source.GetVulnerabilityReportList(cluster)
 	if err != nil {
 		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		return
 	}
 	// Get total images map -- we don't return here if we get an error because it's for optional helpful data
-	imagesMap, err := kube.GetContainerImagesMap()
+	imagesMap, err := source.GetContainerImagesMap(cluster)
 	if err != nil {
 		log.Logger.Error("error getting a list of running images", "error", err.Error())
 	}
@@ -242,7 +247,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get vulnerability reports
-	reports, err := kube.GetVulnerabilityReportList()
+	reports, err := source.GetVulnerabilityReportList(q.Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		return
@@ -313,7 +318,7 @@ func rolesHandler(w http.ResponseWriter, r *http.Request) {
 	namespace := q.Get("namespace")
 
 	// Get role reports
-	reports, err := kube.GetRbacAssessmentReportList()
+	reports, err := source.GetRbacAssessmentReportList(q.Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		return
@@ -357,7 +362,7 @@ func roleHandler(w http.ResponseWriter, r *http.Request) {
 	severity := q.Get("severity")
 
 	// Get role reports
-	reports, err := kube.GetRbacAssessmentReportList()
+	reports, err := source.GetRbacAssessmentReportList(q.Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting RBACAssessmentReports", "error", err.Error())
 		return
@@ -392,7 +397,7 @@ func clusterrolesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get role reports
-	reports, err := kube.GetClusterRbacAssessmentReportList()
+	reports, err := source.GetClusterRbacAssessmentReportList(r.URL.Query().Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting clusterrbacassessmentreports", "error", err.Error())
 		return
@@ -428,7 +433,7 @@ func clusterroleHandler(w http.ResponseWriter, r *http.Request) {
 	severity := q.Get("severity")
 
 	// Get clusterrole reports
-	reports, err := kube.GetClusterRbacAssessmentReportList()
+	reports, err := source.GetClusterRbacAssessmentReportList(q.Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting clusterrbacassessmentreports", "error", err.Error())
 		return
@@ -469,7 +474,7 @@ func configauditsHandler(w http.ResponseWriter, r *http.Request) {
 	kind := q.Get("kind")
 
 	// Get reports
-	reports, err := kube.GetConfigAuditReportList()
+	reports, err := source.GetConfigAuditReportList(q.Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting configauditreports", "error", err.Error())
 		return
@@ -520,7 +525,7 @@ func configauditHandler(w http.ResponseWriter, r *http.Request) {
 	severity := q.Get("severity")
 
 	// Get configaudit reports
-	reports, err := kube.GetConfigAuditReportList()
+	reports, err := source.GetConfigAuditReportList(q.Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting configauditreports", "error", err.Error())
 		return
@@ -556,7 +561,7 @@ func clusterauditsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get reports
-	reports, err := kube.GetClusterInfraAssessmentReportList()
+	reports, err := source.GetClusterInfraAssessmentReportList(r.URL.Query().Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting clusterinfraassessmentreports", "error", err.Error())
 		return
@@ -598,7 +603,7 @@ func clusterauditHandler(w http.ResponseWriter, r *http.Request) {
 	severity := q.Get("severity")
 
 	// Get clusteraudit reports
-	reports, err := kube.GetClusterInfraAssessmentReportList()
+	reports, err := source.GetClusterInfraAssessmentReportList(q.Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting clusterinfraassessmentreports", "error", err.Error())
 		return
@@ -632,7 +637,7 @@ func exposedsecretsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := kube.GetExposedSecretReportList()
+	data, err := source.GetExposedSecretReportList(r.URL.Query().Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting ExposedSecretReports", "error", err.Error())
 		return
@@ -674,7 +679,7 @@ func exposedsecretHandler(w http.ResponseWriter, r *http.Request) {
 	severity := q.Get("severity")
 
 	// Get secret reports
-	data, err := kube.GetExposedSecretReportList()
+	data, err := source.GetExposedSecretReportList(q.Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting ExposedSecretReports", "error", err.Error())
 		return
@@ -712,7 +717,7 @@ func complianceReportsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get compliance reports
-	complianceData, err := kube.GetComplianceReportList()
+	complianceData, err := source.GetComplianceReportList(r.URL.Query().Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting ComplianceReports", "error", err.Error())
 		return
@@ -752,7 +757,7 @@ func complianceReportHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get compliance reports
-	complianceData, err := kube.GetComplianceReportList()
+	complianceData, err := source.GetComplianceReportList(q.Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting ComplianceReports", "error", err.Error())
 		return

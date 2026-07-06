@@ -22,6 +22,7 @@ func GetView(data *v1alpha1.ExposedSecretReportList) View {
 			item.Report.Artifact.Tag,
 			item.Report.Artifact.Digest,
 		)
+		cluster := item.ObjectMeta.Labels[utils.ClusterLabel]
 		image := Data{
 			Name:   getImageNameFromLabels(registry, repository, tag),
 			Digest: digest,
@@ -33,6 +34,10 @@ func GetView(data *v1alpha1.ExposedSecretReportList) View {
 		}
 		image.Resources = make(map[ResourceMetadata]struct{})
 		image.Resources[resourceData] = struct{}{}
+		image.Clusters = make(map[string]struct{})
+		if cluster != "" {
+			image.Clusters[cluster] = struct{}{}
+		}
 
 		// Check if the image used is unique, by fullname (registry/repository:tag) and digest
 		// This check is a little inefficient because it loops through the whole image list
@@ -46,6 +51,9 @@ func GetView(data *v1alpha1.ExposedSecretReportList) View {
 		} else {
 			// Add this resource to the image at the given index if image data already present
 			i[imageIndex].Resources[resourceData] = struct{}{}
+			if cluster != "" {
+				i[imageIndex].Clusters[cluster] = struct{}{}
+			}
 		}
 
 		for _, v := range item.Report.Secrets {

@@ -3,7 +3,27 @@ package images
 import (
 	"encoding/json"
 	"sort"
+	"strings"
 )
+
+// ClusterList returns the cluster names running this image as a stable,
+// comma-separated string for display in the aggregate exposed-secrets table.
+func (d Data) ClusterList() string {
+	return strings.Join(d.sortedClusters(), ", ")
+}
+
+// sortedClusters returns the cluster names as a stable sorted slice.
+func (d Data) sortedClusters() []string {
+	clusters := make([]string, 0, len(d.Clusters))
+	for c := range d.Clusters {
+		if c == "" {
+			continue
+		}
+		clusters = append(clusters, c)
+	}
+	sort.Strings(clusters)
+	return clusters
+}
 
 // MarshalJSON implements json.Marshaler for Data so that the Resources
 // set-map (which uses a struct key unsupported by encoding/json) is emitted
@@ -25,6 +45,7 @@ func (d Data) MarshalJSON() ([]byte, error) {
 	})
 	return json.Marshal(struct {
 		alias
+		Clusters  []string           `json:"clusters"`
 		Resources []ResourceMetadata `json:"resources"`
-	}{alias(d), resources})
+	}{alias(d), d.sortedClusters(), resources})
 }
