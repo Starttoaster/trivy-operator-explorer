@@ -200,23 +200,44 @@ func GetExposedSecretReportList(cluster string) (*v1alpha1.ExposedSecretReportLi
 
 // GetContainerImagesMap returns the merged running-image map for the selected
 // cluster (or all clusters). When the same image key appears in multiple
-// clusters, their resource sets are unioned.
+// clusters, their resource sets are unioned and every owning cluster is recorded
+// in Clusters so the view layer can attribute unscanned images to their cluster.
 func GetContainerImagesMap(cluster string) (map[string]kube.ContainerImage, error) {
+	provider.mu.RLock()
+	defer provider.mu.RUnlock()
+
 	merged := map[string]kube.ContainerImage{}
-	for _, b := range bundlesFor(cluster) {
-		for k, v := range b.ContainerImages {
+	add := func(clusterName string, images map[string]kube.ContainerImage) {
+		for k, v := range images {
 			existing, ok := merged[k]
 			if !ok {
 				resources := make(map[kube.ResourceMetadata]struct{}, len(v.Resources))
 				for r := range v.Resources {
 					resources[r] = struct{}{}
 				}
-				merged[k] = kube.ContainerImage{Name: v.Name, Tag: v.Tag, Digest: v.Digest, Resources: resources}
+				clusters := map[string]struct{}{}
+				if clusterName != "" {
+					clusters[clusterName] = struct{}{}
+				}
+				merged[k] = kube.ContainerImage{Name: v.Name, Tag: v.Tag, Digest: v.Digest, Resources: resources, Clusters: clusters}
 				continue
 			}
 			for r := range v.Resources {
 				existing.Resources[r] = struct{}{}
 			}
+			if clusterName != "" {
+				existing.Clusters[clusterName] = struct{}{}
+			}
+		}
+	}
+
+	if cluster != "" {
+		if b, ok := provider.bundles[cluster]; ok {
+			add(cluster, b.ContainerImages)
+		}
+	} else {
+		for name, b := range provider.bundles {
+			add(name, b.ContainerImages)
 		}
 	}
 	return merged, nil
