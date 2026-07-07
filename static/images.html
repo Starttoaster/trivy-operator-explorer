@@ -57,7 +57,11 @@
                         </th>
                         <!-- Cluster column -->
                         <td class="px-6 py-4 text-gray-900 whitespace-nowrap dark:text-white">
-                            {{ $data.ClusterList }}
+                            {{ if gt $data.ClusterCount 1 }}
+                            <span class="cursor-help underline decoration-dotted" title="{{ $data.ClusterList }}">{{ $data.ClusterDisplay }}</span>
+                            {{ else }}
+                            {{ $data.ClusterDisplay }}
+                            {{ end }}
                         </td>
                         <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                             <a href="/image?{{ if $data.Registry }}registry={{ $data.Registry }}{{ end }}&repository={{ $data.Name }}&tag={{ $data.Tag }}&digest={{ $data.Digest }}{{ if $hasFix }}&hasfix=true{{ end }}{{ if $showIgnored }}&showignored=true{{ end }}" title="{{ $data.Digest }}">
