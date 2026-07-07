@@ -139,6 +139,30 @@ func TestCVEsTemplateRenders(t *testing.T) {
 	}
 }
 
+// TestComplianceReportsTemplateClusterColumn verifies the compliance reports
+// list shows a per-report cluster and scopes each report link to that cluster.
+func TestComplianceReportsTemplateClusterColumn(t *testing.T) {
+	tmpl := template.Must(template.ParseFS(content.Static, "static/compliancereports.html", "static/sidebar.html"))
+
+	view := complianceview.View{
+		{Cluster: "clusterA", ID: "k8s-cis", Title: "CIS Kubernetes Benchmark"},
+		{Cluster: "clusterB", ID: "k8s-cis", Title: "CIS Kubernetes Benchmark"},
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, view); err != nil {
+		t.Fatalf("execute compliancereports.html: %v", err)
+	}
+	out := buf.String()
+
+	if !strings.Contains(out, "clusterA") || !strings.Contains(out, "clusterB") {
+		t.Errorf("expected both cluster names in the compliance reports table")
+	}
+	if !strings.Contains(out, "id=k8s-cis&cluster=clusterA") {
+		t.Errorf("expected the report link to be scoped to its cluster")
+	}
+}
+
 // TestIndexTemplateRenders renders the dashboard including the riskiest-images
 // chart data.
 func TestIndexTemplateRenders(t *testing.T) {
