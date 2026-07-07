@@ -1,0 +1,25 @@
+apiVersion: v1
+entries:
+  trivy-operator-collector:
+  - apiVersion: v2
+    appVersion: sha-46001bc6ed798f30685fecec16d19d8a14dd32c3
+    created: "2026-07-07T02:56:28.40632277Z"
+    description: Collects trivy-operator scan reports from a cluster into an S3 bucket
+    digest: 514efbe6ed0c3f55a637882a11d5b2905c628256dca670220ce3193c35424e0d
+    name: trivy-operator-collector
+    type: application
+    urls:
+    - https://starttoaster.github.io/trivy-operator-explorer/unstable/trivy-operator-collector-0.1.0-unstable.1.tgz
+    version: 0.1.0-unstable.1
+  trivy-operator-explorer:
+  - apiVersion: v2
+    appVersion: sha-46001bc6ed798f30685fecec16d19d8a14dd32c3
+    created: "2026-07-07T02:56:28.406856829Z"
+    description: A Helm chart for Kubernetes
+    digest: cf170e0ed66ba929dc87420f53c56f97dddb953f60b3bc284952d40e9bc2d571
+    name: trivy-operator-explorer
+    type: application
+    urls:
+    - https://starttoaster.github.io/trivy-operator-explorer/unstable/trivy-operator-explorer-0.4.9-unstable.1.tgz
+    version: 0.4.9-unstable.1
+generated: "2026-07-07T02:56:28.405860133Z"
