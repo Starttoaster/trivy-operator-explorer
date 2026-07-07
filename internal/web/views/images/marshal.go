@@ -2,14 +2,35 @@ package images
 
 import (
 	"encoding/json"
+	"fmt"
 	"sort"
 	"strings"
 )
 
 // ClusterList returns the cluster names running this image as a stable,
-// comma-separated string for display in the aggregate images table.
+// comma-separated string. Used as the hover tooltip in the images table.
 func (d Data) ClusterList() string {
 	return strings.Join(d.sortedClusters(), ", ")
+}
+
+// ClusterCount returns the number of distinct clusters running this image.
+func (d Data) ClusterCount() int {
+	return len(d.sortedClusters())
+}
+
+// ClusterDisplay returns the text shown in the Cluster column: nothing when the
+// image isn't attributed to a cluster, the single cluster name when only one
+// runs it, or "N clusters" when several do (with ClusterList as the tooltip).
+func (d Data) ClusterDisplay() string {
+	clusters := d.sortedClusters()
+	switch len(clusters) {
+	case 0:
+		return ""
+	case 1:
+		return clusters[0]
+	default:
+		return fmt.Sprintf("%d clusters", len(clusters))
+	}
 }
 
 // sortedClusters returns the cluster names as a stable sorted slice.
