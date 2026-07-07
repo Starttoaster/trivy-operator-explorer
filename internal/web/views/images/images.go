@@ -207,12 +207,17 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 				}
 				resourceData[r] = struct{}{}
 			}
+			clusterData := make(map[string]struct{}, len(v.Clusters))
+			for c := range v.Clusters {
+				clusterData[c] = struct{}{}
+			}
 			iMap[k] = Data{
 				Ref:       utils.AssembleImageRef("", v.Name, v.Tag, v.Digest),
 				Name:      v.Name,
 				Tag:       v.Tag,
 				Digest:    v.Digest,
 				Resources: resourceData,
+				Clusters:  clusterData,
 				Unscanned: true,
 			}
 		}
