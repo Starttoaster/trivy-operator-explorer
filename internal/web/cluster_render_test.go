@@ -9,6 +9,7 @@ import (
 	assets "github.com/starttoaster/trivy-operator-explorer"
 	"github.com/starttoaster/trivy-operator-explorer/internal/cve"
 	"github.com/starttoaster/trivy-operator-explorer/internal/web/content"
+	complianceview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/compliance"
 	exposedsecretsview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/exposedsecrets"
 	imagesview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/images"
 	indexview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/index"

@@ -15,7 +15,7 @@
 <nav class="sm:ml-64 bg-white border-gray-200 dark:bg-gray-900">
     <div class="max-w-screen-xl flex flex-wrap justify-between p-4">
         <div class="hidden w-full md:block md:w-auto" id="navbar-default">
-            <span class="block py-2 px-3 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 dark:text-white md:dark:text-blue-200" aria-current="page">{{ .Title }}</span>
+            <span class="block py-2 px-3 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 dark:text-white md:dark:text-blue-200" aria-current="page">{{ .Title }}{{ if .Cluster }} <span class="text-gray-500 dark:text-gray-400">({{ .Cluster }})</span>{{ end }}</span>
         </div>
     </div>
 </nav>

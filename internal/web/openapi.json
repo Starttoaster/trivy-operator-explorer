@@ -805,6 +805,7 @@
       "ComplianceData": {
         "type": "object",
         "properties": {
+          "cluster": { "type": "string" },
           "id": { "type": "string" },
           "title": { "type": "string" },
           "summary": { "$ref": "#/components/schemas/ComplianceSummary" },
