@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+      # Release-candidate branches also build images so the unstable Helm charts
+      # (published on every release/** push) have a matching sha-<commit> image.
+      - 'release/**'
     tags:
       - '**'
   workflow_dispatch:

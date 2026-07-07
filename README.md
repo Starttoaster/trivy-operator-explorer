@@ -71,6 +71,21 @@ trivy-operator-explorer \
 trivy-operator-explorer
 ```
 
+### Pre-release / unstable charts
+
+Stable charts are published from `main` to `https://starttoaster.github.io/trivy-operator-explorer`. While the two-app rework is baking on a `release/**` branch, release-candidate charts are published to a separate **unstable** channel on every push to that branch:
+
+```bash
+helm repo add trivy-operator-explorer-unstable \
+  https://starttoaster.github.io/trivy-operator-explorer/unstable
+helm repo update
+
+# See the available pre-release versions (they look like 0.1.0-unstable.42).
+helm search repo trivy-operator-explorer-unstable --devel --versions
+```
+
+Install a specific candidate with `--devel` (so Helm considers pre-release versions) and an explicit `--version`. Each unstable chart pins `appVersion` to the `sha-<commit>` image built from the same commit, so the chart and image always match.
+
 ## Multi-cluster UI
 
 The sidebar has a cluster selector. Choosing a cluster scopes every page to that

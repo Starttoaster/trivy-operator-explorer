@@ -1,0 +1,86 @@
+name: Release Unstable Charts
+
+# Publishes the Helm charts to an "unstable" channel on every push to a
+# release/** branch, without touching the stable chart repo (which is only
+# released from main by helm.yml). The unstable repo is served from a subpath
+# of the same GitHub Pages site:
+#
+#   https://starttoaster.github.io/trivy-operator-explorer/unstable
+#
+# Chart versions are suffixed with -unstable.<run_number> so each push produces
+# a unique, installable version, and appVersion is pinned to sha-<commit> so the
+# chart pulls the image the docker workflow builds from the same commit.
+
+on:
+  push:
+    branches:
+      - 'release/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Serialize publishes so concurrent release/** pushes don't race on the
+# gh-pages branch.
+concurrency:
+  group: release-unstable-charts
+  cancel-in-progress: false
+
+jobs:
+  release-unstable:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Package charts
+        run: |
+          set -euo pipefail
+          app_version="sha-${GITHUB_SHA}"
+          run_number="${{ github.run_number }}"
+          mkdir -p gh-pages/unstable
+
+          for chart in chart/*/; do
+            name="$(basename "$chart")"
+            base="$(yq '.version' "${chart}Chart.yaml")"
+            version="${base}-unstable.${run_number}"
+            echo "Packaging ${name}: version=${version} appVersion=${app_version}"
+            helm package "$chart" \
+              --version "$version" \
+              --app-version "$app_version" \
+              --destination gh-pages/unstable
+          done
+
+      - name: Reindex unstable repo
+        run: |
+          set -euo pipefail
+          base_url="https://starttoaster.github.io/trivy-operator-explorer/unstable"
+          cd gh-pages/unstable
+          if [ -f index.yaml ]; then
+            helm repo index . --url "$base_url" --merge index.yaml
+          else
+            helm repo index . --url "$base_url"
+          fi
+
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+          cd gh-pages
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git add unstable
+          if git diff --cached --quiet; then
+            echo "No unstable chart changes to publish."
+            exit 0
+          fi
+          git commit -m "Publish unstable charts from ${GITHUB_REF_NAME}@${GITHUB_SHA:0:7} (run ${{ github.run_number }})"
+          git push origin gh-pages
