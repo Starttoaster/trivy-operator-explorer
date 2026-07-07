@@ -20,6 +20,9 @@
             <thead class="rounded-lg text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
             <tr>
                 <th scope="col" class="px-6 py-3">
+                    Cluster
+                </th>
+                <th scope="col" class="px-6 py-3">
                     Name
                 </th>
                 <th scope="col" class="px-6 py-3">
@@ -31,31 +34,35 @@
             <tbody>
             {{ range $data := . }}
             <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
-                <!-- Roles column -->
+                <!-- Cluster column -->
                 <td scope="row" class="px-6 py-4 font-medium text-black whitespace-nowrap dark:text-white">
-                    <a href="/compliancereport?id={{ $data.ID }}">
+                    {{ $data.Cluster }}
+                </td>
+                <!-- Name column -->
+                <td scope="row" class="px-6 py-4 font-medium text-black whitespace-nowrap dark:text-white">
+                    <a href="/compliancereport?id={{ $data.ID }}{{ if $data.Cluster }}&cluster={{ $data.Cluster }}{{ end }}">
                         {{ $data.Title }}
                     </a>
                 </td>
                 <!-- Checks column -->
                 <td class="px-6 py-4">
                     {{ if $data.Summary.CriticalFailCount }}
-                    <a href="/compliancereport?id={{ $data.ID }}&severity=Critical" title="Critical" class="bg-red-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-red-900 dark:text-red-100">
+                    <a href="/compliancereport?id={{ $data.ID }}{{ if $data.Cluster }}&cluster={{ $data.Cluster }}{{ end }}&severity=Critical" title="Critical" class="bg-red-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-red-900 dark:text-red-100">
                         {{ $data.Summary.CriticalFailCount }}
                     </a>
                     {{ end }}
                     {{ if $data.Summary.HighFailCount }}
-                    <a href="/compliancereport?id={{ $data.ID }}&severity=High" title="High" class="bg-orange-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-orange-900 dark:text-orange-100">
+                    <a href="/compliancereport?id={{ $data.ID }}{{ if $data.Cluster }}&cluster={{ $data.Cluster }}{{ end }}&severity=High" title="High" class="bg-orange-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-orange-900 dark:text-orange-100">
                         {{ $data.Summary.HighFailCount }}
                     </a>
                     {{ end }}
                     {{ if $data.Summary.MediumFailCount }}
-                    <a href="/compliancereport?id={{ $data.ID }}&severity=Medium" title="Medium" class="bg-yellow-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-yellow-900 dark:text-yellow-100">
+                    <a href="/compliancereport?id={{ $data.ID }}{{ if $data.Cluster }}&cluster={{ $data.Cluster }}{{ end }}&severity=Medium" title="Medium" class="bg-yellow-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-yellow-900 dark:text-yellow-100">
                         {{ $data.Summary.MediumFailCount }}
                     </a>
                     {{ end }}
                     {{ if $data.Summary.LowFailCount }}
-                    <a href="/compliancereport?id={{ $data.ID }}&severity=Low" title="Low" class="bg-blue-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-blue-900 dark:text-blue-100">
+                    <a href="/compliancereport?id={{ $data.ID }}{{ if $data.Cluster }}&cluster={{ $data.Cluster }}{{ end }}&severity=Low" title="Low" class="bg-blue-200 text-black text-xs font-medium me-1 px-2 py-2 rounded dark:bg-blue-900 dark:text-blue-100">
                         {{ $data.Summary.LowFailCount }}
                     </a>
                     {{ end }}
