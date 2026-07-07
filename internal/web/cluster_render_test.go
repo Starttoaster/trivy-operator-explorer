@@ -43,9 +43,9 @@ func TestImagesTemplateClusterColumn(t *testing.T) {
 	if !strings.Contains(out, "2 clusters") {
 		t.Errorf("expected multi-cluster image to render as '2 clusters'")
 	}
-	// Tooltip should list the clusters in sorted order.
-	if !strings.Contains(out, `title="clusterA, clusterB"`) {
-		t.Errorf("expected hover tooltip listing 'clusterA, clusterB'")
+	// Tooltip should list the clusters in sorted order via the data-tooltip attr.
+	if !strings.Contains(out, `data-tooltip="clusterA, clusterB"`) {
+		t.Errorf("expected data-tooltip listing 'clusterA, clusterB'")
 	}
 }
 
@@ -65,7 +65,7 @@ func TestExposedSecretsTemplateClusterColumn(t *testing.T) {
 	if !strings.Contains(out, "2 clusters") {
 		t.Errorf("expected multi-cluster image to render as '2 clusters'")
 	}
-	if !strings.Contains(out, `title="clusterA, clusterB"`) {
-		t.Errorf("expected hover tooltip listing 'clusterA, clusterB'")
+	if !strings.Contains(out, `data-tooltip="clusterA, clusterB"`) {
+		t.Errorf("expected data-tooltip listing 'clusterA, clusterB'")
 	}
 }
