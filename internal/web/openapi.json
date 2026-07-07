@@ -36,6 +36,19 @@
         }
       }
     },
+    "/api/v1/status": {
+      "get": {
+        "summary": "Per-cluster sync freshness.",
+        "description": "Returns, for each cluster known to the frontend, when its report bundle was last written to S3 and by what collector version.",
+        "responses": {
+          "200": {
+            "description": "Cluster statuses.",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ClusterStatus" } } } }
+          },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
     "/api/v1/openapi.json": {
       "get": {
         "summary": "Fetch this OpenAPI document.",
@@ -147,6 +160,27 @@
           },
           "400": { "$ref": "#/components/responses/BadRequest" },
           "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/cves": {
+      "get": {
+        "summary": "Aggregate every CVE across all scanned images.",
+        "description": "Cluster-wide CVE rollup. Each CVE aggregate includes the worst severity, max CVSS score, fix availability, Trivy class/package type, the count of affected images, and the per-image affected list. Sortable and filterable for triage.",
+        "parameters": [
+          { "$ref": "#/components/parameters/Cluster" },
+          { "$ref": "#/components/parameters/Severity" },
+          { "$ref": "#/components/parameters/HasFix" },
+          { "$ref": "#/components/parameters/ShowIgnored" },
+          { "name": "class", "in": "query", "description": "Trivy package class filter.", "schema": { "type": "string", "enum": ["os-pkgs", "lang-pkgs"] } },
+          { "name": "package_type", "in": "query", "description": "Package type filter (e.g. apk, dpkg, gobinary, npm).", "schema": { "type": "string" } },
+          { "name": "cve", "in": "query", "description": "Exact CVE ID filter (case-insensitive).", "schema": { "type": "string" } },
+          { "name": "sort_by", "in": "query", "description": "Sort order.", "schema": { "type": "string", "enum": ["pressure_desc", "score_desc", "affected_count_desc", "cve_id_asc"] } },
+          { "name": "limit", "in": "query", "description": "Maximum number of CVEs to return; 0 means no limit.", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Aggregated CVEs.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CveList" } } } },
           "500": { "$ref": "#/components/responses/InternalError" }
         }
       }
@@ -410,6 +444,14 @@
           "error": { "type": "string", "description": "Human-readable error message." }
         }
       },
+      "ClusterStatus": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "synced_at": { "type": "string", "format": "date-time" },
+          "version": { "type": "string" }
+        }
+      },
       "HealthResponse": {
         "type": "object",
         "required": ["status", "version"],
@@ -494,6 +536,50 @@
           "os_version": { "type": "string" },
           "os_end_of_service_life": { "type": "string" },
           "vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/ImageVulnerability" } }
+        }
+      },
+      "CveAffectedImage": {
+        "type": "object",
+        "properties": {
+          "ref": { "type": "string" },
+          "registry": { "type": "string" },
+          "repository": { "type": "string" },
+          "tag": { "type": "string" },
+          "digest": { "type": "string" },
+          "cluster": { "type": "string" },
+          "vulnerable_version": { "type": "string" },
+          "fixed_version": { "type": "string" },
+          "resource": { "type": "string" },
+          "class": { "type": "string" },
+          "package_type": { "type": "string" },
+          "pkg_path": { "type": "string" },
+          "pkg_purl": { "type": "string" },
+          "score": { "type": "number", "format": "float" },
+          "is_ignored": { "type": "boolean" },
+          "ignore_reason": { "type": "string" }
+        }
+      },
+      "CveAggregate": {
+        "type": "object",
+        "properties": {
+          "cve_id": { "type": "string" },
+          "severity": { "type": "string" },
+          "max_score": { "type": "number", "format": "float" },
+          "title": { "type": "string" },
+          "url": { "type": "string" },
+          "has_fix": { "type": "boolean" },
+          "class": { "type": "string" },
+          "package_type": { "type": "string" },
+          "affected_image_count": { "type": "integer" },
+          "ignored_on_all_images": { "type": "boolean" },
+          "affected_images": { "type": "array", "items": { "$ref": "#/components/schemas/CveAffectedImage" } }
+        }
+      },
+      "CveList": {
+        "type": "object",
+        "properties": {
+          "total": { "type": "integer" },
+          "cves": { "type": "array", "items": { "$ref": "#/components/schemas/CveAggregate" } }
         }
       },
       "RoleVulnerability": {

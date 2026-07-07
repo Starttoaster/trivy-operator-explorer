@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+  <title>Explorer: CVEs</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="/static/img/t.ico">
+  <link href="/static/css/output.css" rel="stylesheet">
+  <link href="/static/css/extra.css" rel="stylesheet">
+  <script src="/static/js/cves-table.js"></script>
+</head>
+<body class="min-h-screen bg-gray-200 dark:bg-indigo-900">
+
+    <!-- Sidebar -->
+    {{template "sidebar.html" .}}
+
+    <div class="p-4 sm:ml-64 bg-gray-200 dark:bg-indigo-900">
+        <!-- Filter bar -->
+        <form method="get" action="/cves" class="mb-4 flex flex-wrap items-end gap-3">
+            <input type="hidden" name="cluster" value="{{ .Cluster }}">
+            <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Search</label>
+                <input type="text" id="cveSearch" placeholder="CVE, image, package..." class="text-sm rounded-lg border border-gray-300 bg-white p-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-indigo-900 dark:text-white" oninput="filterCVEs(this.value)">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Severity</label>
+                <select name="severity" onchange="this.form.submit()" class="text-sm rounded-lg border border-gray-300 bg-white p-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-indigo-900 dark:text-white">
+                    <option value="" {{ if eq .Severity "" }}selected{{ end }}>All</option>
+                    <option value="critical" {{ if eq .Severity "critical" }}selected{{ end }}>Critical</option>
+                    <option value="high" {{ if eq .Severity "high" }}selected{{ end }}>High</option>
+                    <option value="medium" {{ if eq .Severity "medium" }}selected{{ end }}>Medium</option>
+                    <option value="low" {{ if eq .Severity "low" }}selected{{ end }}>Low</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Package class</label>
+                <select name="class" onchange="this.form.submit()" class="text-sm rounded-lg border border-gray-300 bg-white p-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-indigo-900 dark:text-white">
+                    <option value="" {{ if eq .Class "" }}selected{{ end }}>All</option>
+                    <option value="os-pkgs" {{ if eq .Class "os-pkgs" }}selected{{ end }}>OS packages</option>
+                    <option value="lang-pkgs" {{ if eq .Class "lang-pkgs" }}selected{{ end }}>Application packages</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Fixable</label>
+                <select name="hasfix" onchange="this.form.submit()" class="text-sm rounded-lg border border-gray-300 bg-white p-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-indigo-900 dark:text-white">
+                    <option value="" {{ if eq .HasFix "" }}selected{{ end }}>All</option>
+                    <option value="true" {{ if eq .HasFix "true" }}selected{{ end }}>Fixable only</option>
+                    <option value="false" {{ if eq .HasFix "false" }}selected{{ end }}>No fix</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Sort by</label>
+                <select name="sort_by" onchange="this.form.submit()" class="text-sm rounded-lg border border-gray-300 bg-white p-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-indigo-900 dark:text-white">
+                    <option value="pressure_desc" {{ if or (eq .SortBy "") (eq .SortBy "pressure_desc") }}selected{{ end }}>Pressure</option>
+                    <option value="score_desc" {{ if eq .SortBy "score_desc" }}selected{{ end }}>CVSS score</option>
+                    <option value="affected_count_desc" {{ if eq .SortBy "affected_count_desc" }}selected{{ end }}>Affected images</option>
+                    <option value="cve_id_asc" {{ if eq .SortBy "cve_id_asc" }}selected{{ end }}>CVE ID</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-2 pb-2">
+                <input type="checkbox" name="showignored" value="true" {{ if .ShowIgnored }}checked{{ end }} onchange="this.form.submit()" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                <label class="text-sm font-medium text-gray-900 dark:text-gray-300">Show ignored</label>
+            </div>
+            <div class="pb-2">
+                <a id="cveExportLink" href="#" onclick="exportCVEs(event)" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Export CSV</a>
+            </div>
+        </form>
+
+        <div class="mb-2 text-sm text-gray-600 dark:text-gray-400"><span id="cveCount">{{ .Result.Total }}</span> CVEs</div>
+
+        <div class="relative overflow-x-auto shadow-md rounded-lg">
+            <table id="cvesTable" class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                <thead class="rounded-lg text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <th scope="col" class="px-6 py-3">CVE</th>
+                        <th scope="col" class="px-6 py-3">Severity</th>
+                        <th scope="col" class="px-6 py-3">Score</th>
+                        <th scope="col" class="px-6 py-3">Fix</th>
+                        <th scope="col" class="px-6 py-3">Class</th>
+                        <th scope="col" class="px-6 py-3">Images</th>
+                        <th scope="col" class="px-6 py-3" title="CVSS score multiplied by the number of affected images">Pressure</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ range $c := .Result.CVEs }}
+                    {{ $rowID := $c.CVEID | sanitizeID }}
+                    <tr class="cve-row bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600" data-search="{{ $c.CVEID }} {{ $c.Title }} {{ $c.Class }} {{ $c.PackageType }}">
+                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            <div class="flex items-center">
+                                <button type="button" onclick="toggleCVE('{{ $rowID }}')" class="flex items-center">
+                                    <svg class="w-4 h-4 mr-2 transform transition-transform" id="icon-{{ $rowID }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                                {{ if $c.URL }}<a href="{{ $c.URL }}" target="_blank" rel="noopener" class="hover:underline">{{ $c.CVEID }}</a>{{ else }}{{ $c.CVEID }}{{ end }}
+                            </div>
+                        </th>
+                        <td class="px-6 py-4">
+                            {{ if eq $c.Severity "CRITICAL" }}<span class="bg-red-200 text-black text-xs font-medium px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-100">Critical</span>
+                            {{ else if eq $c.Severity "HIGH" }}<span class="bg-orange-200 text-black text-xs font-medium px-2.5 py-0.5 rounded dark:bg-orange-900 dark:text-orange-100">High</span>
+                            {{ else if eq $c.Severity "MEDIUM" }}<span class="bg-yellow-200 text-black text-xs font-medium px-2.5 py-0.5 rounded dark:bg-yellow-900 dark:text-yellow-100">Medium</span>
+                            {{ else if eq $c.Severity "LOW" }}<span class="bg-blue-200 text-black text-xs font-medium px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-100">Low</span>
+                            {{ else }}<span class="text-xs">{{ $c.Severity }}</span>{{ end }}
+                        </td>
+                        <td class="px-6 py-4">{{ printf "%.1f" $c.MaxScore }}</td>
+                        <td class="px-6 py-4">
+                            {{ if $c.HasFix }}<span class="bg-green-200 text-black text-xs font-medium px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-100">Fix available</span>{{ else }}<span class="text-xs text-gray-400">none</span>{{ end }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">{{ $c.Class }}{{ if $c.PackageType }} <span class="text-gray-400">({{ $c.PackageType }})</span>{{ end }}</td>
+                        <td class="px-6 py-4">{{ $c.AffectedImageCount }}</td>
+                        <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">{{ printf "%.1f" $c.Pressure }}</td>
+                    </tr>
+                    <!-- Affected images sub-table -->
+                    <tr id="detail-{{ $rowID }}" class="cve-detail hidden">
+                        <td colspan="7" class="px-6 py-4">
+                            <div class="relative overflow-x-auto shadow-md rounded-lg">
+                                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3">Cluster</th>
+                                            <th scope="col" class="px-6 py-3">Image</th>
+                                            <th scope="col" class="px-6 py-3">Installed</th>
+                                            <th scope="col" class="px-6 py-3">Fixed</th>
+                                            <th scope="col" class="px-6 py-3">Package</th>
+                                            <th scope="col" class="px-6 py-3">Ignored</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {{ range $img := $c.AffectedImages }}
+                                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                            <td class="px-6 py-4 text-black dark:text-white">{{ $img.Cluster }}</td>
+                                            <td class="px-6 py-4 text-black dark:text-white">
+                                                <a class="hover:underline" href="/image?registry={{ $img.Registry }}&repository={{ $img.Repository }}&tag={{ $img.Tag }}&digest={{ $img.Digest }}{{ if $img.Cluster }}&cluster={{ $img.Cluster }}{{ end }}">{{ $img.Ref }}</a>
+                                            </td>
+                                            <td class="px-6 py-4 text-black dark:text-white">{{ $img.VulnerableVersion }}</td>
+                                            <td class="px-6 py-4 text-black dark:text-white">{{ if $img.FixedVersion }}{{ $img.FixedVersion }}{{ else }}<span class="text-gray-400">-</span>{{ end }}</td>
+                                            <td class="px-6 py-4 text-black dark:text-white">{{ $img.Resource }}</td>
+                                            <td class="px-6 py-4 text-black dark:text-white">{{ if $img.IsIgnored }}<span title="{{ $img.IgnoreReason }}">yes</span>{{ else }}no{{ end }}</td>
+                                        </tr>
+                                        {{ end }}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

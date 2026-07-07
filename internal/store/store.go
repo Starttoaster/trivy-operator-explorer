@@ -57,6 +57,7 @@ type Bundle struct {
 	ClusterInfraAssessmentReports *v1alpha1.ClusterInfraAssessmentReportList
 	ExposedSecretReports          *v1alpha1.ExposedSecretReportList
 	ContainerImages               map[string]kube.ContainerImage
+	Meta                          *Meta
 }
 
 // Meta is a small manifest object written alongside each cluster's reports so
@@ -228,6 +229,12 @@ func (c *Client) LoadCluster(ctx context.Context, cluster string) (*Bundle, erro
 		return nil, fmt.Errorf("error reading %s for cluster %s: %w", objContainerImages, cluster, err)
 	}
 	b.ContainerImages = containerImagesFromDTO(imagesDTO)
+
+	var meta Meta
+	if err := c.getJSON(ctx, c.key(cluster, objMeta), &meta); err != nil && !errors.Is(err, errNotFound) {
+		return nil, fmt.Errorf("error reading %s for cluster %s: %w", objMeta, cluster, err)
+	}
+	b.Meta = &meta
 
 	return b, nil
 }

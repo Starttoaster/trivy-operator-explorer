@@ -9,6 +9,7 @@
   <script src="/static/js/chart.js"></script>
   <script src="/static/js/images-hasfix.js"></script>
   <script src="/static/js/images-resources-table.js"></script>
+  <script src="/static/js/images-table.js"></script>
 </head>
 <body class="min-h-screen bg-gray-200 dark:bg-indigo-900">
      
@@ -17,8 +18,47 @@
 
     <!-- Table content -->
     <div class="p-4 sm:ml-64 bg-gray-200 dark:bg-indigo-900">
+        <!-- Summary stat cards -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <div class="text-xs uppercase text-gray-500 dark:text-gray-400">Images</div>
+                <div class="text-2xl font-semibold text-gray-900 dark:text-white">{{ .TotalImages }}</div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <div class="text-xs uppercase text-gray-500 dark:text-gray-400">Critical</div>
+                <div class="text-2xl font-semibold text-red-600 dark:text-red-400">{{ .Stats.CriticalVulnerabilities }}</div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <div class="text-xs uppercase text-gray-500 dark:text-gray-400">High</div>
+                <div class="text-2xl font-semibold text-orange-500 dark:text-orange-400">{{ .Stats.HighVulnerabilities }}</div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <div class="text-xs uppercase text-gray-500 dark:text-gray-400">Medium / Low</div>
+                <div class="text-2xl font-semibold text-gray-700 dark:text-gray-300">{{ .Stats.MediumVulnerabilities }} / {{ .Stats.LowVulnerabilities }}</div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <div class="text-xs uppercase text-gray-500 dark:text-gray-400">Fixable</div>
+                <div class="text-2xl font-semibold text-green-600 dark:text-green-400">{{ .Stats.FixAvailableCount }}</div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <div class="text-xs uppercase text-gray-500 dark:text-gray-400">End of Service Life</div>
+                <div class="text-2xl font-semibold text-gray-900 dark:text-white">{{ .Stats.EOSLCount }}</div>
+            </div>
+        </div>
+
+        <!-- Search + filters + export -->
+        <div class="mb-3 flex flex-wrap items-center gap-3">
+            <input type="text" id="imageSearch" placeholder="Filter images by name, tag, or cluster..." class="w-full md:w-96 text-sm rounded-lg border border-gray-300 bg-white p-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-indigo-900 dark:text-white" oninput="filterImages(this.value)">
+            <select onchange="setImageClass(this.value)" title="Filter by vulnerability package class" class="text-sm rounded-lg border border-gray-300 bg-white p-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-indigo-900 dark:text-white">
+                <option value="" {{ if eq .Class "" }}selected{{ end }}>All packages</option>
+                <option value="os-pkgs" {{ if eq .Class "os-pkgs" }}selected{{ end }}>Has OS-package CVEs</option>
+                <option value="lang-pkgs" {{ if eq .Class "lang-pkgs" }}selected{{ end }}>Has app-package CVEs</option>
+            </select>
+            <a href="#" onclick="exportImages(event)" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Export CSV</a>
+        </div>
+
         <div class="relative overflow-x-auto shadow-md rounded-lg">
-            <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+            <table id="imagesTable" class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                 <!-- Table headers -->
                 <thead class="rounded-lg text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                     <tr>
@@ -32,6 +72,9 @@
                             Based On
                         </th>
                         <th scope="col" class="px-6 py-3">
+                            Fixable
+                        </th>
+                        <th scope="col" class="px-6 py-3">
                             Vulnerabilities
                         </th>
                     </tr>
@@ -41,7 +84,18 @@
                     {{ $hasFix := .HasFix }}
                     {{ $showIgnored := .ShowIgnored }}
                     {{ range $data := .Data }}
-                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600">
+                    <tr class="image-row bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
+                        data-search="{{ $data.Registry }} {{ $data.Name }} {{ $data.Tag }} {{ $data.ClusterList }}"
+                        data-digest="{{ $data.Digest | sanitizeID }}"
+                        data-name="{{ if $data.Registry }}{{ $data.Registry }}/{{ end }}{{ $data.Name }}{{ if $data.Tag }}:{{ $data.Tag }}{{ end }}"
+                        data-cluster="{{ $data.ClusterList }}"
+                        data-os="{{ $data.OSFamily }} {{ $data.OSVersion }}"
+                        data-critical="{{ len $data.CriticalVulnerabilities }}"
+                        data-high="{{ len $data.HighVulnerabilities }}"
+                        data-medium="{{ len $data.MediumVulnerabilities }}"
+                        data-low="{{ len $data.LowVulnerabilities }}"
+                        data-fixable="{{ $data.FixAvailableCount }}"
+                        data-total="{{ add $data.FixAvailableCount $data.NoFixAvailableCount }}">
                         <!-- Image column -->
                         <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                             <div class="flex items-center">
@@ -68,6 +122,18 @@
                                 {{ if .OSFamily }}<span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">{{ .OSFamily }} {{ .OSVersion }}</span>{{ end }} {{ if .OSEndOfServiceLife }}<span class="bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-red-900 dark:text-red-300">EoSL</span>{{ end }}
                             </a>
                         </th>
+                        <!-- Fixable column -->
+                        {{ $tot := add $data.FixAvailableCount $data.NoFixAvailableCount }}
+                        <td class="px-6 py-4">
+                            {{ if $tot }}
+                            <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">{{ $data.FixAvailableCount }}/{{ $tot }}</div>
+                            <div class="w-20 bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
+                                <div class="bg-green-500 h-1.5 rounded-full" style="width: {{ pct $data.FixAvailableCount $tot }}%"></div>
+                            </div>
+                            {{ else }}
+                            <span class="text-xs text-gray-400">-</span>
+                            {{ end }}
+                        </td>
                         <!-- Vulnerabilities column -->
                         <td class="px-6 py-4">
                             {{ if .Unscanned }}<span class="bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-red-900 dark:text-red-300">Unscanned</span>{{ end }}
@@ -94,8 +160,8 @@
                         </td>
                     </tr>
                     <!-- Resources sub-table -->
-                    <tr id="resources-{{ $data.Digest | sanitizeID }}" class="hidden">
-                        <td colspan="4" class="px-6 py-4">
+                    <tr id="resources-{{ $data.Digest | sanitizeID }}" class="resource-row hidden">
+                        <td colspan="5" class="px-6 py-4">
                             <div class="relative overflow-x-auto shadow-md rounded-lg">
                                 <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                                     <thead class="rounded-lg text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
