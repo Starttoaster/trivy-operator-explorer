@@ -10,6 +10,7 @@ package source
 
 import (
 	"context"
+	"sort"
 	"sync"
 	"time"
 
@@ -99,6 +100,35 @@ func ListClusters() []string {
 	defer provider.mu.RUnlock()
 	out := make([]string, len(provider.clusters))
 	copy(out, provider.clusters)
+	return out
+}
+
+// ClusterStatus reports the freshness of a cluster's data in the cache.
+type ClusterStatus struct {
+	Name     string    `json:"name"`
+	SyncedAt time.Time `json:"synced_at"`
+	Version  string    `json:"version"`
+}
+
+// ClusterStatuses returns the per-cluster sync metadata (from each cluster's
+// meta.json), sorted by name. Used by the UI freshness indicator.
+func ClusterStatuses() []ClusterStatus {
+	if provider == nil {
+		return nil
+	}
+	provider.mu.RLock()
+	defer provider.mu.RUnlock()
+
+	out := make([]ClusterStatus, 0, len(provider.clusters))
+	for _, name := range provider.clusters {
+		st := ClusterStatus{Name: name}
+		if b := provider.bundles[name]; b != nil && b.Meta != nil {
+			st.SyncedAt = b.Meta.SyncedAt
+			st.Version = b.Meta.Version
+		}
+		out = append(out, st)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 	return out
 }
 

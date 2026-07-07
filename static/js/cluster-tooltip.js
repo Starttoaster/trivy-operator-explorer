@@ -1,18 +1,16 @@
-// cluster-tooltip.js renders a small, instant, dark popover for any element
-// carrying a `data-tooltip` attribute (used by the "N clusters" cells in the
-// images and exposed-secrets tables).
+// cluster-tooltip.js renders a small, instant, theme-aware popover for any
+// element carrying a `data-tooltip` attribute (the "N clusters" cells and the
+// Pressure column header).
 //
-// It deliberately appends a single position:fixed element to <body> rather than
-// using a CSS-only group-hover tooltip, because those tables live inside
-// `overflow-x-auto` containers that also clip vertically and would cut the
-// tooltip off. The comma-separated attribute value is rendered one item per
-// line.
+// It appends a single position:fixed element to <body> rather than using a
+// CSS-only group-hover tooltip, because the tables live inside overflow-x-auto
+// containers that also clip vertically and would cut the tooltip off. Values are
+// rendered with pre-line whitespace: commas in a cluster list become separate
+// lines, and long sentences wrap at the max width.
 (function () {
   "use strict";
 
   let tip;
-
-  // The chart uses Tailwind's `darkMode: 'media'`, so follow prefers-color-scheme.
   const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
   function applyTheme() {
@@ -41,7 +39,7 @@
       borderRadius: "6px",
       fontSize: "12px",
       lineHeight: "1.45",
-      whiteSpace: "pre",
+      whiteSpace: "pre-line",
       display: "none",
       maxWidth: "20rem",
     });
@@ -50,7 +48,6 @@
     return tip;
   }
 
-  // Re-theme a visible tooltip if the OS switches light/dark mid-hover.
   darkQuery.addEventListener("change", applyTheme);
 
   function show(el) {
@@ -58,11 +55,13 @@
     if (!raw) return;
     const t = ensureTip();
     applyTheme();
-    t.textContent = raw
-      .split(",")
-      .map(function (s) { return s.trim(); })
-      .filter(Boolean)
-      .join("\n");
+    // A comma-separated value (e.g. a cluster list) renders one item per line;
+    // a plain sentence is left as-is and wrapped by pre-line + max-width.
+    if (raw.indexOf(",") !== -1) {
+      t.textContent = raw.split(",").map(function (s) { return s.trim(); }).filter(Boolean).join("\n");
+    } else {
+      t.textContent = raw;
+    }
     t.style.display = "block";
     position(el);
   }
@@ -76,7 +75,6 @@
     if (left + tip.offsetWidth > window.innerWidth - pad) {
       left = window.innerWidth - tip.offsetWidth - pad;
     }
-    // Flip above the element if it would overflow the bottom of the viewport.
     if (top + tip.offsetHeight > window.innerHeight - pad) {
       top = r.top - tip.offsetHeight - 6;
     }
@@ -98,7 +96,5 @@
     if (el && !el.contains(e.relatedTarget)) hide();
   });
 
-  // Hide on any scroll (including inside the table's own scroll container) so
-  // the fixed-position box doesn't detach from its trigger.
   window.addEventListener("scroll", hide, true);
 })();

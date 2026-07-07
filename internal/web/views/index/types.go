@@ -16,6 +16,18 @@ type View struct {
 	EOSLCount               int `json:"eosl_count"`
 	NoEOSLCount             int `json:"no_eosl_count"`
 
+	// TopImages is the handful of most at-risk images, for the dashboard bar chart.
+	TopImages []TopImage `json:"top_images"`
+
 	// Data for compliance reports
 	ComplianceReports []complianceview.Data `json:"compliance_reports"`
+}
+
+// TopImage is a single image's severity breakdown for the "riskiest images" chart.
+type TopImage struct {
+	Name     string `json:"name"`
+	Critical int    `json:"critical"`
+	High     int    `json:"high"`
+	Medium   int    `json:"medium"`
+	Low      int    `json:"low"`
 }

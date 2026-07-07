@@ -34,6 +34,7 @@ func Start(port string) error {
 	mux.HandleFunc("/", indexHandler)
 	mux.HandleFunc("/images", imagesHandler)
 	mux.HandleFunc("/image", imageHandler)
+	mux.HandleFunc("/cves", cvesHandler)
 	mux.HandleFunc("/configaudits", configauditsHandler)
 	mux.HandleFunc("/configaudit", configauditHandler)
 	mux.HandleFunc("/clusteraudits", clusterauditsHandler)
@@ -54,9 +55,11 @@ func Start(port string) error {
 	mux.HandleFunc("/api/v1/", methodGet(apiIndexHandler))
 	mux.HandleFunc("/api/v1/health", methodGet(apiHealthHandler))
 	mux.HandleFunc("/api/v1/clusters", methodGet(apiClustersHandler))
+	mux.HandleFunc("/api/v1/status", methodGet(apiStatusHandler))
 	mux.HandleFunc("/api/v1/openapi.json", methodGet(apiOpenAPIHandler))
 	mux.HandleFunc("/api/v1/images", methodGet(apiImagesHandler))
 	mux.HandleFunc("/api/v1/image", methodGet(apiImageHandler))
+	mux.HandleFunc("/api/v1/cves", methodGet(apiCvesHandler))
 	mux.HandleFunc("/api/v1/configaudits", methodGet(apiConfigauditsHandler))
 	mux.HandleFunc("/api/v1/configaudit", methodGet(apiConfigauditHandler))
 	mux.HandleFunc("/api/v1/clusteraudits", methodGet(apiClusterauditsHandler))
@@ -122,6 +125,13 @@ func imagesHandler(w http.ResponseWriter, r *http.Request) {
 			replacer := strings.NewReplacer("/", "_", ":", "_", " ", "_", "-", "_", ".", "_")
 			return replacer.Replace(s)
 		},
+		"add": func(a, b int) int { return a + b },
+		"pct": func(a, b int) int {
+			if b == 0 {
+				return 0
+			}
+			return a * 100 / b
+		},
 	}
 
 	tmpl := template.Must(template.New("images.html").Funcs(funcMap).ParseFS(content.Static, "static/images.html", "static/sidebar.html"))
@@ -172,18 +182,28 @@ func imagesHandler(w http.ResponseWriter, r *http.Request) {
 	imageData := imagesview.GetView(data, imagesMap, imagesview.Filters{
 		HasFix:      hasFixBool,
 		ShowIgnored: showIgnoredBool,
+		Class:       q.Get("class"),
 	})
+
+	// Summary stats for the cards above the table (reuses the index rollup).
+	stats := indexview.GetView(imageData, nil)
 
 	// Add page type to template data
 	templateData := struct {
 		PageRoute   string
 		HasFix      bool
 		ShowIgnored bool
+		Class       string
+		TotalImages int
+		Stats       indexview.View
 		Data        imagesview.View
 	}{
 		PageRoute:   "images",
 		HasFix:      hasFixBool,
 		ShowIgnored: showIgnoredBool,
+		Class:       q.Get("class"),
+		TotalImages: len(imageData),
+		Stats:       stats,
 		Data:        imageData,
 	}
 

@@ -38,6 +38,11 @@ type Filters struct {
 	// of the listed CVE IDs (logical AND). Ignored CVEs only count when
 	// ShowIgnored is true (matching the existing per-image behavior).
 	CVEIDs []string
+
+	// Class, when non-empty, restricts results to images that contain at least
+	// one vulnerability of the given Trivy package class (e.g. "os-pkgs" or
+	// "lang-pkgs"). Case-insensitive.
+	Class string
 }
 
 // GetView converts some report data to the /images view
@@ -291,6 +296,26 @@ func matchesImageLevelFilters(d Data, f Filters) bool {
 			if _, ok := present[want]; !ok {
 				return false
 			}
+		}
+	}
+
+	if f.Class != "" {
+		hasClass := false
+		for _, group := range [][]Vulnerability{
+			d.CriticalVulnerabilities, d.HighVulnerabilities, d.MediumVulnerabilities, d.LowVulnerabilities,
+		} {
+			for _, v := range group {
+				if strings.EqualFold(v.Class, f.Class) {
+					hasClass = true
+					break
+				}
+			}
+			if hasClass {
+				break
+			}
+		}
+		if !hasClass {
+			return false
 		}
 	}
 

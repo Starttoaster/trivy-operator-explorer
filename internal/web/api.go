@@ -48,6 +48,16 @@ func apiClustersHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, clusters)
 }
 
+// apiStatusHandler returns per-cluster sync freshness (from each cluster's
+// meta.json). The UI freshness indicator uses this.
+func apiStatusHandler(w http.ResponseWriter, r *http.Request) {
+	statuses := source.ClusterStatuses()
+	if statuses == nil {
+		statuses = []source.ClusterStatus{}
+	}
+	writeJSON(w, http.StatusOK, statuses)
+}
+
 // writeJSON serializes body to JSON and writes it to w with the given status.
 func writeJSON(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -154,6 +164,7 @@ func apiImagesHandler(w http.ResponseWriter, r *http.Request) {
 		OSFamily:    q.Get("os_family"),
 		EOSL:        eosl,
 		CVEIDs:      q["cve"],
+		Class:       q.Get("class"),
 	})
 	writeJSON(w, http.StatusOK, view)
 }
