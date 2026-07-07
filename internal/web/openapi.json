@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Trivy Operator Explorer API",
-    "description": "Read-only JSON access to the trivy-operator reports surfaced by this explorer, plus management of ignored CVEs. Every read endpoint mirrors the equivalent HTML page; every mutation endpoint lives under /api/v1/ignores.",
+    "description": "Read-only JSON access to the trivy-operator reports surfaced by this explorer, plus management of ignored CVEs. Every read endpoint mirrors the equivalent HTML page; every mutation endpoint lives under /api/v1/ignores. Reports are collected from many clusters into a shared S3 bucket; every read endpoint accepts an optional `cluster` query parameter (see #/components/parameters/Cluster) to scope results to a single cluster, or aggregate across all clusters when omitted.",
     "version": "v1"
   },
   "servers": [
@@ -23,6 +23,32 @@
         }
       }
     },
+    "/api/v1/clusters": {
+      "get": {
+        "summary": "List the cluster names known to the frontend.",
+        "description": "Returns the cluster names discovered in the S3 bucket. Used to populate the UI cluster selector and as valid values for the `cluster` query parameter.",
+        "responses": {
+          "200": {
+            "description": "List of cluster names.",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "type": "string" } } } }
+          },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/status": {
+      "get": {
+        "summary": "Per-cluster sync freshness.",
+        "description": "Returns, for each cluster known to the frontend, when its report bundle was last written to S3 and by what collector version.",
+        "responses": {
+          "200": {
+            "description": "Cluster statuses.",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ClusterStatus" } } } }
+          },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
     "/api/v1/openapi.json": {
       "get": {
         "summary": "Fetch this OpenAPI document.",
@@ -38,6 +64,9 @@
       "get": {
         "summary": "Aggregated index summary.",
         "description": "Counters for image vulnerabilities (by severity, fix-available, end-of-service-life) plus the full list of compliance reports.",
+        "parameters": [
+          { "$ref": "#/components/parameters/Cluster" }
+        ],
         "responses": {
           "200": {
             "description": "Index summary.",
@@ -51,6 +80,7 @@
       "get": {
         "summary": "List all scanned (and unscanned) container images.",
         "parameters": [
+          { "$ref": "#/components/parameters/Cluster" },
           { "$ref": "#/components/parameters/HasFix" },
           { "$ref": "#/components/parameters/ShowIgnored" },
           {
@@ -98,6 +128,7 @@
         "summary": "Get the detail view for a single image.",
         "description": "Pass either `ref` (a canonical fully-qualified image reference like `index.docker.io/library/nginx:1.27@sha256:...`) or the split `registry`/`repository`/`tag`/`digest` parameters. `ref` wins when both are supplied.",
         "parameters": [
+          { "$ref": "#/components/parameters/Cluster" },
           {
             "name": "ref",
             "in": "query",
@@ -129,6 +160,27 @@
           },
           "400": { "$ref": "#/components/responses/BadRequest" },
           "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/api/v1/cves": {
+      "get": {
+        "summary": "Aggregate every CVE across all scanned images.",
+        "description": "Cluster-wide CVE rollup. Each CVE aggregate includes the worst severity, max CVSS score, fix availability, Trivy class/package type, the count of affected images, and the per-image affected list. Sortable and filterable for triage.",
+        "parameters": [
+          { "$ref": "#/components/parameters/Cluster" },
+          { "$ref": "#/components/parameters/Severity" },
+          { "$ref": "#/components/parameters/HasFix" },
+          { "$ref": "#/components/parameters/ShowIgnored" },
+          { "name": "class", "in": "query", "description": "Trivy package class filter.", "schema": { "type": "string", "enum": ["os-pkgs", "lang-pkgs"] } },
+          { "name": "package_type", "in": "query", "description": "Package type filter (e.g. apk, dpkg, gobinary, npm).", "schema": { "type": "string" } },
+          { "name": "cve", "in": "query", "description": "Exact CVE ID filter (case-insensitive).", "schema": { "type": "string" } },
+          { "name": "sort_by", "in": "query", "description": "Sort order.", "schema": { "type": "string", "enum": ["pressure_desc", "score_desc", "affected_count_desc", "cve_id_asc"] } },
+          { "name": "limit", "in": "query", "description": "Maximum number of CVEs to return; 0 means no limit.", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Aggregated CVEs.", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CveList" } } } },
           "500": { "$ref": "#/components/responses/InternalError" }
         }
       }
@@ -341,6 +393,13 @@
   },
   "components": {
     "parameters": {
+      "Cluster": {
+        "name": "cluster",
+        "in": "query",
+        "description": "Scope the response to a single cluster (by name, as returned by /api/v1/clusters). When omitted, results are aggregated across all clusters.",
+        "required": false,
+        "schema": { "type": "string" }
+      },
       "HasFix": {
         "name": "hasfix",
         "in": "query",
@@ -383,6 +442,14 @@
         "required": ["error"],
         "properties": {
           "error": { "type": "string", "description": "Human-readable error message." }
+        }
+      },
+      "ClusterStatus": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "synced_at": { "type": "string", "format": "date-time" },
+          "version": { "type": "string" }
         }
       },
       "HealthResponse": {
@@ -430,6 +497,7 @@
           "os_family": { "type": "string" },
           "os_version": { "type": "string" },
           "os_end_of_service_life": { "type": "string" },
+          "clusters": { "type": "array", "items": { "type": "string" }, "description": "Clusters running this image (aggregated across clusters when no cluster filter is set)." },
           "resources": { "type": "array", "items": { "$ref": "#/components/schemas/ImageResource" } },
           "critical_vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/ImagesVulnerability" } },
           "high_vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/ImagesVulnerability" } },
@@ -470,6 +538,50 @@
           "vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/ImageVulnerability" } }
         }
       },
+      "CveAffectedImage": {
+        "type": "object",
+        "properties": {
+          "ref": { "type": "string" },
+          "registry": { "type": "string" },
+          "repository": { "type": "string" },
+          "tag": { "type": "string" },
+          "digest": { "type": "string" },
+          "cluster": { "type": "string" },
+          "vulnerable_version": { "type": "string" },
+          "fixed_version": { "type": "string" },
+          "resource": { "type": "string" },
+          "class": { "type": "string" },
+          "package_type": { "type": "string" },
+          "pkg_path": { "type": "string" },
+          "pkg_purl": { "type": "string" },
+          "score": { "type": "number", "format": "float" },
+          "is_ignored": { "type": "boolean" },
+          "ignore_reason": { "type": "string" }
+        }
+      },
+      "CveAggregate": {
+        "type": "object",
+        "properties": {
+          "cve_id": { "type": "string" },
+          "severity": { "type": "string" },
+          "max_score": { "type": "number", "format": "float" },
+          "title": { "type": "string" },
+          "url": { "type": "string" },
+          "has_fix": { "type": "boolean" },
+          "class": { "type": "string" },
+          "package_type": { "type": "string" },
+          "affected_image_count": { "type": "integer" },
+          "ignored_on_all_images": { "type": "boolean" },
+          "affected_images": { "type": "array", "items": { "$ref": "#/components/schemas/CveAffectedImage" } }
+        }
+      },
+      "CveList": {
+        "type": "object",
+        "properties": {
+          "total": { "type": "integer" },
+          "cves": { "type": "array", "items": { "$ref": "#/components/schemas/CveAggregate" } }
+        }
+      },
       "RoleVulnerability": {
         "type": "object",
         "properties": {
@@ -481,6 +593,7 @@
       "RolesData": {
         "type": "object",
         "properties": {
+          "cluster": { "type": "string" },
           "name": { "type": "string" },
           "namespace": { "type": "string" },
           "kind": { "type": "string" },
@@ -516,6 +629,7 @@
       "ClusterRolesData": {
         "type": "object",
         "properties": {
+          "cluster": { "type": "string" },
           "name": { "type": "string" },
           "kind": { "type": "string" },
           "critical_vulnerabilities": { "type": "array", "items": { "$ref": "#/components/schemas/RoleVulnerability" } },
@@ -547,6 +661,7 @@
       "ConfigAuditsData": {
         "type": "object",
         "properties": {
+          "cluster": { "type": "string" },
           "name": { "type": "string" },
           "namespace": { "type": "string" },
           "kind": { "type": "string" },
@@ -591,6 +706,7 @@
       "ClusterAuditsData": {
         "type": "object",
         "properties": {
+          "cluster": { "type": "string" },
           "name": { "type": "string" },
           "kind": { "type": "string" },
           "critical_checks": { "type": "array", "items": { "$ref": "#/components/schemas/ClusterAuditCheck" } },
@@ -636,6 +752,7 @@
         "properties": {
           "name": { "type": "string" },
           "digest": { "type": "string" },
+          "clusters": { "type": "array", "items": { "type": "string" }, "description": "Clusters running this image (aggregated across clusters when no cluster filter is set)." },
           "resources": { "type": "array", "items": { "$ref": "#/components/schemas/ImageResource" } },
           "critical": { "type": "array", "items": { "$ref": "#/components/schemas/ExposedSecret" } },
           "high": { "type": "array", "items": { "$ref": "#/components/schemas/ExposedSecret" } },
@@ -688,6 +805,7 @@
       "ComplianceData": {
         "type": "object",
         "properties": {
+          "cluster": { "type": "string" },
           "id": { "type": "string" },
           "title": { "type": "string" },
           "summary": { "$ref": "#/components/schemas/ComplianceSummary" },

@@ -25,6 +25,24 @@ config:
   # over Streamable HTTP. If you change this, change the service.mcpPort value too.
   mcp_port: '8081'
 
+  # How often the frontend reloads cluster report bundles from S3.
+  cache_refresh_interval: '5m'
+
+# S3 configuration. The frontend reads the report bundles that collectors write
+# into this bucket (one prefix per cluster). Credentials are resolved via the
+# standard AWS credential chain; use serviceAccount.annotations for IRSA.
+s3:
+  # Required: the bucket the collectors write to.
+  bucket: ''
+  # Optional key prefix within the bucket.
+  prefix: ''
+  # Optional region. If empty, the AWS SDK default resolution is used.
+  region: ''
+
+# Extra environment variables to add to the frontend container (e.g. static AWS
+# credentials when not using IRSA).
+extraEnv: []
+
 # Database volume configuration
 # By default, uses an emptyDir volume (ephemeral storage)
 # To use persistent storage, set persistentVolumeClaim.enabled to true

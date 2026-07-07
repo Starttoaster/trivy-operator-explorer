@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
+	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 )
 
 // GetView converts some report data to the /compliancereports view
@@ -76,8 +77,9 @@ func GetView(data *v1alpha1.ClusterComplianceReportList) View {
 		}
 
 		r = append(r, Data{
-			ID:    item.Spec.Compliance.ID,
-			Title: item.Spec.Compliance.Title,
+			Cluster: item.ObjectMeta.Labels[utils.ClusterLabel],
+			ID:      item.Spec.Compliance.ID,
+			Title:   item.Spec.Compliance.Title,
 			Summary: Summary{
 				FailCount:         item.Status.Summary.FailCount,
 				PassCount:         item.Status.Summary.PassCount,
@@ -168,9 +170,10 @@ func GetSingleReportData(data *v1alpha1.ClusterComplianceReportList, id string, 
 		}
 
 		r = Data{
-			ID:     item.Spec.Compliance.ID,
-			Title:  item.Spec.Compliance.Title,
-			Checks: checks,
+			Cluster: item.ObjectMeta.Labels[utils.ClusterLabel],
+			ID:      item.Spec.Compliance.ID,
+			Title:   item.Spec.Compliance.Title,
+			Checks:  checks,
 		}
 	}
 

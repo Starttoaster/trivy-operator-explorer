@@ -38,6 +38,11 @@ type Filters struct {
 	// of the listed CVE IDs (logical AND). Ignored CVEs only count when
 	// ShowIgnored is true (matching the existing per-image behavior).
 	CVEIDs []string
+
+	// Class, when non-empty, restricts results to images that contain at least
+	// one vulnerability of the given Trivy package class (e.g. "os-pkgs" or
+	// "lang-pkgs"). Case-insensitive.
+	Class string
 }
 
 // GetView converts some report data to the /images view
@@ -62,6 +67,8 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 			tag,
 			digest,
 		)
+		cluster := item.ObjectMeta.Labels[utils.ClusterLabel]
+
 		_, ok := iMap[iMapKey]
 		if ok {
 			resourceData := ResourceMetadata{
@@ -70,6 +77,9 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 				Namespace: item.ObjectMeta.Labels["trivy-operator.resource.namespace"],
 			}
 			iMap[iMapKey].Resources[resourceData] = struct{}{}
+			if cluster != "" {
+				iMap[iMapKey].Clusters[cluster] = struct{}{}
+			}
 			continue
 		}
 
@@ -99,6 +109,10 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 		}
 		image.Resources = make(map[ResourceMetadata]struct{})
 		image.Resources[resourceData] = struct{}{}
+		image.Clusters = make(map[string]struct{})
+		if cluster != "" {
+			image.Clusters[cluster] = struct{}{}
+		}
 
 		// Get ignored CVEs from database (if 'show ignored' filter is false)
 		var ignoredCVEs map[string]db.IgnoredImageVulnerability
@@ -198,12 +212,17 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 				}
 				resourceData[r] = struct{}{}
 			}
+			clusterData := make(map[string]struct{}, len(v.Clusters))
+			for c := range v.Clusters {
+				clusterData[c] = struct{}{}
+			}
 			iMap[k] = Data{
 				Ref:       utils.AssembleImageRef("", v.Name, v.Tag, v.Digest),
 				Name:      v.Name,
 				Tag:       v.Tag,
 				Digest:    v.Digest,
 				Resources: resourceData,
+				Clusters:  clusterData,
 				Unscanned: true,
 			}
 		}
@@ -277,6 +296,26 @@ func matchesImageLevelFilters(d Data, f Filters) bool {
 			if _, ok := present[want]; !ok {
 				return false
 			}
+		}
+	}
+
+	if f.Class != "" {
+		hasClass := false
+		for _, group := range [][]Vulnerability{
+			d.CriticalVulnerabilities, d.HighVulnerabilities, d.MediumVulnerabilities, d.LowVulnerabilities,
+		} {
+			for _, v := range group {
+				if strings.EqualFold(v.Class, f.Class) {
+					hasClass = true
+					break
+				}
+			}
+			if hasClass {
+				break
+			}
+		}
+		if !hasClass {
+			return false
 		}
 	}
 

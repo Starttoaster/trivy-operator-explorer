@@ -1,9 +1,9 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "trivy-operator-explorer.fullname" . }}
+  name: {{ include "trivy-operator-collector.fullname" . }}
   labels:
-    {{- include "trivy-operator-explorer.labels" . | nindent 4 }}
+    {{- include "trivy-operator-collector.labels" . | nindent 4 }}
 rules:
   - verbs:
       - get

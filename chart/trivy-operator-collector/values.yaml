@@ -1,0 +1,78 @@
+# Default values for trivy-operator-collector.
+# This is a YAML-formatted file.
+
+image:
+  repository: ghcr.io/starttoaster/trivy-operator-explorer-collector
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+config:
+  # Set to 'debug' for more logs
+  log_level: 'info'
+
+  # Required: the name used as the S3 key namespace for this cluster's reports.
+  clusterName: ''
+
+  # How often to read the cluster's reports and write them to S3.
+  syncInterval: '5m'
+
+# S3 configuration. The collector writes this cluster's report bundle here.
+# Credentials are resolved via the standard AWS credential chain; use
+# serviceAccount.annotations for IRSA.
+s3:
+  # Required: the bucket to write to.
+  bucket: ''
+  # Optional key prefix within the bucket.
+  prefix: ''
+  # Optional region. If empty, the AWS SDK default resolution is used.
+  region: ''
+
+# Extra environment variables to add to the collector container (e.g. static AWS
+# credentials when not using IRSA).
+extraEnv: []
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account (e.g. IRSA role ARN)
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  runAsUser: 10001
+  runAsGroup: 30000
+  fsGroup: 2000
+  runAsNonRoot: true
+
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  runAsUser: 10001
+  runAsGroup: 30000
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

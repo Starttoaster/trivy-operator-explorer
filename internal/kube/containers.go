@@ -17,6 +17,11 @@ type ContainerImage struct {
 	Tag       string
 	Digest    string
 	Resources map[ResourceMetadata]struct{} // data about resources using this image
+	// Clusters records which clusters run this image. It is not populated by the
+	// per-cluster collector (which has no cluster identity); the frontend's
+	// source layer fills it in when merging bundles so unscanned images can be
+	// attributed to their cluster(s).
+	Clusters map[string]struct{}
 }
 
 // ResourceMetadata data related to a k8s Pod

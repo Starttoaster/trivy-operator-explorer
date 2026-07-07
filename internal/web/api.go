@@ -6,8 +6,8 @@ import (
 	"strconv"
 
 	"github.com/starttoaster/trivy-operator-explorer/internal/db"
-	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
+	"github.com/starttoaster/trivy-operator-explorer/internal/source"
 	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 	"github.com/starttoaster/trivy-operator-explorer/internal/version"
 	clusterauditview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/clusteraudit"
@@ -33,9 +33,29 @@ type healthResponse struct {
 }
 
 // apiHealthHandler is a cheap liveness probe. It deliberately does not touch
-// Kubernetes so the result is stable across cluster reachability hiccups.
+// the S3 store so the result is stable across backend reachability hiccups.
 func apiHealthHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, healthResponse{Status: "ok", Version: version.Version})
+}
+
+// apiClustersHandler returns the list of clusters currently cached from S3. The
+// UI cluster selector uses this to populate its options.
+func apiClustersHandler(w http.ResponseWriter, r *http.Request) {
+	clusters := source.ListClusters()
+	if clusters == nil {
+		clusters = []string{}
+	}
+	writeJSON(w, http.StatusOK, clusters)
+}
+
+// apiStatusHandler returns per-cluster sync freshness (from each cluster's
+// meta.json). The UI freshness indicator uses this.
+func apiStatusHandler(w http.ResponseWriter, r *http.Request) {
+	statuses := source.ClusterStatuses()
+	if statuses == nil {
+		statuses = []source.ClusterStatus{}
+	}
+	writeJSON(w, http.StatusOK, statuses)
 }
 
 // writeJSON serializes body to JSON and writes it to w with the given status.
@@ -89,7 +109,9 @@ func apiIndexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	vulnerabilityData, err := kube.GetVulnerabilityReportList()
+	cluster := r.URL.Query().Get("cluster")
+
+	vulnerabilityData, err := source.GetVulnerabilityReportList(cluster)
 	if err != nil {
 		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		writeJSONError(w, http.StatusInternalServerError, "failed to list vulnerability reports")
@@ -97,7 +119,7 @@ func apiIndexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	imagesView := imagesview.GetView(vulnerabilityData, nil, imagesview.Filters{})
 
-	complianceData, err := kube.GetComplianceReportList()
+	complianceData, err := source.GetComplianceReportList(cluster)
 	if err != nil {
 		log.Logger.Error("error getting ComplianceReports", "error", err.Error())
 		writeJSONError(w, http.StatusInternalServerError, "failed to list compliance reports")
@@ -123,13 +145,14 @@ func apiImagesHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	data, err := kube.GetVulnerabilityReportList()
+	cluster := q.Get("cluster")
+	data, err := source.GetVulnerabilityReportList(cluster)
 	if err != nil {
 		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		writeJSONError(w, http.StatusInternalServerError, "failed to list vulnerability reports")
 		return
 	}
-	imagesMap, err := kube.GetContainerImagesMap()
+	imagesMap, err := source.GetContainerImagesMap(cluster)
 	if err != nil {
 		log.Logger.Error("error getting a list of running images", "error", err.Error())
 	}
@@ -141,6 +164,7 @@ func apiImagesHandler(w http.ResponseWriter, r *http.Request) {
 		OSFamily:    q.Get("os_family"),
 		EOSL:        eosl,
 		CVEIDs:      q["cve"],
+		Class:       q.Get("class"),
 	})
 	writeJSON(w, http.StatusOK, view)
 }
@@ -189,7 +213,7 @@ func apiImageHandler(w http.ResponseWriter, r *http.Request) {
 	hasFixBool := parseBoolQuery("hasfix", q.Get("hasfix"))
 	showIgnoredBool := parseBoolQuery("showignored", q.Get("showignored"))
 
-	reports, err := kube.GetVulnerabilityReportList()
+	reports, err := source.GetVulnerabilityReportList(q.Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting VulnerabilityReports", "error", err.Error())
 		writeJSONError(w, http.StatusInternalServerError, "failed to list vulnerability reports")
@@ -228,7 +252,7 @@ func apiRolesHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	namespace := q.Get("namespace")
 
-	reports, err := kube.GetRbacAssessmentReportList()
+	reports, err := source.GetRbacAssessmentReportList(q.Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting RBACAssessmentReports", "error", err.Error())
 		writeJSONError(w, http.StatusInternalServerError, "failed to list rbac assessment reports")
@@ -253,7 +277,7 @@ func apiRoleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	severity := q.Get("severity")
 
-	reports, err := kube.GetRbacAssessmentReportList()
+	reports, err := source.GetRbacAssessmentReportList(q.Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting RBACAssessmentReports", "error", err.Error())
 		writeJSONError(w, http.StatusInternalServerError, "failed to list rbac assessment reports")
@@ -272,7 +296,7 @@ func apiRoleHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func apiClusterrolesHandler(w http.ResponseWriter, r *http.Request) {
-	reports, err := kube.GetClusterRbacAssessmentReportList()
+	reports, err := source.GetClusterRbacAssessmentReportList(r.URL.Query().Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting clusterrbacassessmentreports", "error", err.Error())
 		writeJSONError(w, http.StatusInternalServerError, "failed to list cluster rbac assessment reports")
@@ -290,7 +314,7 @@ func apiClusterroleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	severity := q.Get("severity")
 
-	reports, err := kube.GetClusterRbacAssessmentReportList()
+	reports, err := source.GetClusterRbacAssessmentReportList(q.Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting clusterrbacassessmentreports", "error", err.Error())
 		writeJSONError(w, http.StatusInternalServerError, "failed to list cluster rbac assessment reports")
@@ -312,7 +336,7 @@ func apiConfigauditsHandler(w http.ResponseWriter, r *http.Request) {
 	namespace := q.Get("namespace")
 	kind := q.Get("kind")
 
-	reports, err := kube.GetConfigAuditReportList()
+	reports, err := source.GetConfigAuditReportList(q.Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting configauditreports", "error", err.Error())
 		writeJSONError(w, http.StatusInternalServerError, "failed to list config audit reports")
@@ -343,7 +367,7 @@ func apiConfigauditHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	severity := q.Get("severity")
 
-	reports, err := kube.GetConfigAuditReportList()
+	reports, err := source.GetConfigAuditReportList(q.Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting configauditreports", "error", err.Error())
 		writeJSONError(w, http.StatusInternalServerError, "failed to list config audit reports")
@@ -363,7 +387,7 @@ func apiConfigauditHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func apiClusterauditsHandler(w http.ResponseWriter, r *http.Request) {
-	reports, err := kube.GetClusterInfraAssessmentReportList()
+	reports, err := source.GetClusterInfraAssessmentReportList(r.URL.Query().Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting clusterinfraassessmentreports", "error", err.Error())
 		writeJSONError(w, http.StatusInternalServerError, "failed to list cluster infra assessment reports")
@@ -386,7 +410,7 @@ func apiClusterauditHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	severity := q.Get("severity")
 
-	reports, err := kube.GetClusterInfraAssessmentReportList()
+	reports, err := source.GetClusterInfraAssessmentReportList(q.Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting clusterinfraassessmentreports", "error", err.Error())
 		writeJSONError(w, http.StatusInternalServerError, "failed to list cluster infra assessment reports")
@@ -405,7 +429,7 @@ func apiClusterauditHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func apiExposedsecretsHandler(w http.ResponseWriter, r *http.Request) {
-	data, err := kube.GetExposedSecretReportList()
+	data, err := source.GetExposedSecretReportList(r.URL.Query().Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting ExposedSecretReports", "error", err.Error())
 		writeJSONError(w, http.StatusInternalServerError, "failed to list exposed secret reports")
@@ -428,7 +452,7 @@ func apiExposedsecretHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	severity := q.Get("severity")
 
-	data, err := kube.GetExposedSecretReportList()
+	data, err := source.GetExposedSecretReportList(q.Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting ExposedSecretReports", "error", err.Error())
 		writeJSONError(w, http.StatusInternalServerError, "failed to list exposed secret reports")
@@ -447,7 +471,7 @@ func apiExposedsecretHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func apiComplianceReportsHandler(w http.ResponseWriter, r *http.Request) {
-	data, err := kube.GetComplianceReportList()
+	data, err := source.GetComplianceReportList(r.URL.Query().Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting ComplianceReports", "error", err.Error())
 		writeJSONError(w, http.StatusInternalServerError, "failed to list compliance reports")
@@ -561,7 +585,7 @@ func apiComplianceReportHandler(w http.ResponseWriter, r *http.Request) {
 		severity = &s
 	}
 
-	data, err := kube.GetComplianceReportList()
+	data, err := source.GetComplianceReportList(q.Get("cluster"))
 	if err != nil {
 		log.Logger.Error("error getting ComplianceReports", "error", err.Error())
 		writeJSONError(w, http.StatusInternalServerError, "failed to list compliance reports")

@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+      # Release-candidate branches also build images so the unstable Helm charts
+      # (published on every release/** push) have a matching sha-<commit> image.
+      - 'release/**'
     tags:
       - '**'
   workflow_dispatch:
@@ -19,6 +22,15 @@ jobs:
   package:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      matrix:
+        include:
+          # The frontend keeps the repository name so existing deployments that
+          # reference ghcr.io/<repo> continue to pull the web UI image.
+          - image: ghcr.io/${{ github.repository }}
+            dockerfile: Dockerfile
+          - image: ghcr.io/${{ github.repository }}-collector
+            dockerfile: Dockerfile.collector
     steps:
       - uses: actions/checkout@v4
 
@@ -40,7 +52,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ghcr.io/${{ github.repository }}
+            ${{ matrix.image }}
           flavor: |
             latest=auto
             prefix=
@@ -55,6 +67,8 @@ jobs:
       - name: Build Docker Container
         uses: docker/build-push-action@v5
         with:
+          context: .
+          file: ${{ matrix.dockerfile }}
           platforms: "linux/amd64,linux/arm64"
           push: true
           tags: ${{ steps.meta.outputs.tags }}

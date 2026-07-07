@@ -189,6 +189,46 @@
 
     <div class="p-4 sm:ml-64 bg-gray-200 dark:bg-indigo-900">
         <div class="p-4 relative overflow-x-auto shadow-md rounded-lg bg-gray-50 dark:bg-gray-800">
+            <div class="w-full text-xl text-center text-black dark:text-white mb-4">
+                <a href="/images">
+                    Riskiest Images
+                </a>
+            </div>
+            {{ if .TopImages }}
+            <div style="max-width: 820px; margin: 0 auto;"><canvas id="topImagesChart"></canvas></div>
+            <script defer>
+                Chart.defaults.font.size = 16;
+                Chart.defaults.color = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? '#fff' : '#000';
+                new Chart(document.getElementById('topImagesChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: [{{ range .TopImages }}'{{ .Name }}', {{ end }}],
+                        datasets: [
+                            { label: 'Critical', data: [{{ range .TopImages }}{{ .Critical }}, {{ end }}], backgroundColor: 'rgba(220, 53, 69, 0.8)' },
+                            { label: 'High', data: [{{ range .TopImages }}{{ .High }}, {{ end }}], backgroundColor: 'rgba(255, 125, 20, 0.8)' },
+                            { label: 'Medium', data: [{{ range .TopImages }}{{ .Medium }}, {{ end }}], backgroundColor: 'rgba(255, 193, 7, 0.8)' },
+                            { label: 'Low', data: [{{ range .TopImages }}{{ .Low }}, {{ end }}], backgroundColor: 'rgba(13, 110, 253, 0.8)' }
+                        ]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        scales: { x: { stacked: true, beginAtZero: true }, y: { stacked: true } },
+                        plugins: {
+                            title: { display: true, text: 'Top 10 Riskiest Images', font: { size: 18 } },
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+            </script>
+            {{ else }}
+            <div class="text-center text-gray-500 dark:text-gray-400 py-6">No vulnerable images found.</div>
+            {{ end }}
+        </div>
+    </div>
+
+    <div class="p-4 sm:ml-64 bg-gray-200 dark:bg-indigo-900">
+        <div class="p-4 relative overflow-x-auto shadow-md rounded-lg bg-gray-50 dark:bg-gray-800">
             <div class="w-full text-xl text-center text-black dark:text-white">
                 <a href="/compliancereports">
                     Compliance Reports

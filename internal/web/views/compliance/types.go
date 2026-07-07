@@ -5,6 +5,7 @@ type View []Data
 
 // Data contains compliance report data
 type Data struct {
+	Cluster string  `json:"cluster"`
 	ID      string  `json:"id"`
 	Title   string  `json:"title"`
 	Summary Summary `json:"summary"`

@@ -1,0 +1,12 @@
+FROM golang:1 AS build
+
+WORKDIR /go/src/app
+COPY . .
+
+RUN go mod download
+# The collector has no sqlite dependency, so it builds as a static binary.
+RUN CGO_ENABLED=0 go build -o /go/bin/app ./cmd/collector
+
+FROM gcr.io/distroless/static-debian12
+COPY --from=build /go/bin/app /
+CMD ["/app"]

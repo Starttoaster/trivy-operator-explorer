@@ -13,6 +13,7 @@ type Data struct {
 	OSFamily                string                        `json:"os_family"`              // distro name like "debian" or "alpine"
 	OSVersion               string                        `json:"os_version"`             // distro version like "12.6"
 	OSEndOfServiceLife      string                        `json:"os_end_of_service_life"` // end of service life data
+	Clusters                map[string]struct{}           `json:"-"`                      // clusters running this image (serialized via custom MarshalJSON)
 	Resources               map[ResourceMetadata]struct{} `json:"-"`                      // data about resources using this image (serialized via custom MarshalJSON)
 	CriticalVulnerabilities []Vulnerability               `json:"critical_vulnerabilities"`
 	HighVulnerabilities     []Vulnerability               `json:"high_vulnerabilities"`

@@ -7,8 +7,8 @@ import (
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/starttoaster/trivy-operator-explorer/internal/db"
-	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
+	"github.com/starttoaster/trivy-operator-explorer/internal/source"
 	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 	imageview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/image"
 	imagesview "github.com/starttoaster/trivy-operator-explorer/internal/web/views/images"
@@ -22,6 +22,13 @@ const defaultRegistry = "index.docker.io"
 // declared via mcp.AddTool so the SDK auto-generates input/output JSON
 // Schemas from the Go types.
 func registerTools(s *mcpsdk.Server) {
+	mcpsdk.AddTool(s, &mcpsdk.Tool{
+		Name: "list_clusters",
+		Description: "List the cluster names whose trivy-operator reports are currently available. " +
+			"Use a returned name as the optional `cluster` argument on the other tools to scope " +
+			"results to a single cluster; omit `cluster` to aggregate across all of them.",
+	}, listClustersTool)
+
 	mcpsdk.AddTool(s, &mcpsdk.Tool{
 		Name: "list_images",
 		Description: "List every container image known to the cluster (scanned by trivy-operator " +
@@ -79,9 +86,31 @@ func registerTools(s *mcpsdk.Server) {
 	}, unignoreCVEsTool)
 }
 
+// ----- list_clusters -----
+
+// listClustersParams intentionally has no fields; list_clusters takes no input.
+type listClustersParams struct{}
+
+// listClustersResult wraps the cluster-name slice in an object so the
+// auto-generated MCP output schema has type "object", which the spec requires
+// for structured tool output.
+type listClustersResult struct {
+	Total    int      `json:"total"`
+	Clusters []string `json:"clusters"`
+}
+
+func listClustersTool(_ context.Context, _ *mcpsdk.CallToolRequest, _ listClustersParams) (*mcpsdk.CallToolResult, listClustersResult, error) {
+	clusters := source.ListClusters()
+	if clusters == nil {
+		clusters = []string{}
+	}
+	return nil, listClustersResult{Total: len(clusters), Clusters: clusters}, nil
+}
+
 // ----- list_images -----
 
 type listImagesParams struct {
+	Cluster     string   `json:"cluster,omitempty" jsonschema:"optional cluster name to scope results to; empty means aggregate across all clusters"`
 	Severity    string   `json:"severity,omitempty" jsonschema:"optional severity filter (critical|high|medium|low), case-insensitive; keeps only images that contain at least one non-ignored CVE of this severity"`
 	HasFix      bool     `json:"has_fix,omitempty" jsonschema:"when true, only count CVEs that have a fixed version available"`
 	ShowIgnored bool     `json:"show_ignored,omitempty" jsonschema:"when true, include CVEs marked as ignored in the database"`
@@ -99,11 +128,11 @@ type listImagesResult struct {
 }
 
 func listImagesTool(_ context.Context, _ *mcpsdk.CallToolRequest, in listImagesParams) (*mcpsdk.CallToolResult, listImagesResult, error) {
-	reports, err := getReportsOrError()
+	reports, err := getReportsOrError(in.Cluster)
 	if err != nil {
 		return nil, listImagesResult{}, err
 	}
-	imagesMap, err := kube.GetContainerImagesMap()
+	imagesMap, err := source.GetContainerImagesMap(in.Cluster)
 	if err != nil {
 		log.Logger.Error("MCP list_images: error getting a list of running images", "error", err.Error())
 	}
@@ -121,6 +150,7 @@ func listImagesTool(_ context.Context, _ *mcpsdk.CallToolRequest, in listImagesP
 // ----- get_image -----
 
 type getImageParams struct {
+	Cluster     string   `json:"cluster,omitempty" jsonschema:"optional cluster name to scope results to; empty means aggregate across all clusters"`
 	Ref         string   `json:"ref,omitempty" jsonschema:"canonical image ref like 'index.docker.io/library/nginx:1.27@sha256:...'; preferred when supplied; must include @digest"`
 	Registry    string   `json:"registry,omitempty" jsonschema:"image registry host; defaults to 'index.docker.io' when empty and ref is not supplied"`
 	Repository  string   `json:"repository,omitempty" jsonschema:"image repository (required when ref is not supplied)"`
@@ -143,7 +173,7 @@ func getImageTool(_ context.Context, _ *mcpsdk.CallToolRequest, in getImageParam
 		return nil, getImageResult{}, err
 	}
 
-	reports, err := getReportsOrError()
+	reports, err := getReportsOrError(in.Cluster)
 	if err != nil {
 		return nil, getImageResult{}, err
 	}
@@ -178,7 +208,7 @@ func getImageTool(_ context.Context, _ *mcpsdk.CallToolRequest, in getImageParam
 // ----- list_cves -----
 
 func listCVEsTool(_ context.Context, _ *mcpsdk.CallToolRequest, in listCVEsParams) (*mcpsdk.CallToolResult, listCVEsResult, error) {
-	reports, err := getReportsOrError()
+	reports, err := getReportsOrError(in.Cluster)
 	if err != nil {
 		return nil, listCVEsResult{}, err
 	}
@@ -191,7 +221,7 @@ func listImagesWithCVETool(_ context.Context, _ *mcpsdk.CallToolRequest, in list
 	if strings.TrimSpace(in.CVEID) == "" {
 		return nil, listImagesWithCVEResult{}, fmt.Errorf("cve_id is required")
 	}
-	reports, err := getReportsOrError()
+	reports, err := getReportsOrError(in.Cluster)
 	if err != nil {
 		return nil, listImagesWithCVEResult{}, err
 	}
