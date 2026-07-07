@@ -47,14 +47,20 @@
         </div>
 
         <!-- Search + filters + export -->
-        <div class="mb-3 flex flex-wrap items-center gap-3">
-            <input type="text" id="imageSearch" placeholder="Filter images by name, tag, or cluster..." class="w-full md:w-96 text-sm rounded-lg border border-gray-300 bg-white p-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-indigo-900 dark:text-white" oninput="filterImages(this.value)">
-            <select onchange="setImageClass(this.value)" title="Filter by vulnerability package class" class="text-sm rounded-lg border border-gray-300 bg-white p-2 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-indigo-900 dark:text-white">
-                <option value="" {{ if eq .Class "" }}selected{{ end }}>All packages</option>
-                <option value="os-pkgs" {{ if eq .Class "os-pkgs" }}selected{{ end }}>Has OS-package CVEs</option>
-                <option value="lang-pkgs" {{ if eq .Class "lang-pkgs" }}selected{{ end }}>Has app-package CVEs</option>
-            </select>
-            <a href="#" onclick="exportImages(event)" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Export CSV</a>
+        <div class="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow flex flex-wrap items-end gap-4">
+            <div class="w-full sm:w-96">
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Search</label>
+                <input type="text" id="imageSearch" placeholder="Filter by name, tag, or cluster..." class="w-full h-10 text-sm rounded-lg border border-gray-300 bg-gray-50 px-3 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" oninput="filterImages(this.value)">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Package class</label>
+                <select onchange="setImageClass(this.value)" class="h-10 text-sm rounded-lg border border-gray-300 bg-gray-50 px-3 text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                    <option value="" {{ if eq .Class "" }}selected{{ end }}>All packages</option>
+                    <option value="os-pkgs" {{ if eq .Class "os-pkgs" }}selected{{ end }}>Has OS-package CVEs</option>
+                    <option value="lang-pkgs" {{ if eq .Class "lang-pkgs" }}selected{{ end }}>Has app-package CVEs</option>
+                </select>
+            </div>
+            <button type="button" onclick="exportImages(event)" class="h-10 inline-flex items-center text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 rounded-lg text-sm px-4 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Export CSV</button>
         </div>
 
         <div class="relative overflow-x-auto shadow-md rounded-lg">
@@ -110,12 +116,8 @@
                             </div>
                         </th>
                         <!-- Cluster column -->
-                        <td class="px-6 py-4 text-gray-900 whitespace-nowrap dark:text-white">
-                            {{ if gt $data.ClusterCount 1 }}
-                            <span class="cursor-help underline decoration-dotted" title="{{ $data.ClusterList }}">{{ $data.ClusterDisplay }}</span>
-                            {{ else }}
+                        <td class="px-6 py-4 text-gray-900 whitespace-nowrap dark:text-white{{ if gt $data.ClusterCount 1 }} cursor-help underline decoration-dotted underline-offset-2{{ end }}"{{ if gt $data.ClusterCount 1 }} data-tooltip="{{ $data.ClusterList }}"{{ end }}>
                             {{ $data.ClusterDisplay }}
-                            {{ end }}
                         </td>
                         <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                             <a href="/image?{{ if $data.Registry }}registry={{ $data.Registry }}{{ end }}&repository={{ $data.Name }}&tag={{ $data.Tag }}&digest={{ $data.Digest }}{{ if $hasFix }}&hasfix=true{{ end }}{{ if $showIgnored }}&showignored=true{{ end }}" title="{{ $data.Digest }}">
