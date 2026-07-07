@@ -4,13 +4,25 @@ Every HTML page has a JSON counterpart under `/api/v1/...`. Responses mirror the
 
 A machine-readable OpenAPI 3 spec is served at `/api/v1/openapi.json` and is the source of truth for parameter shapes and response schemas. It is suitable for auto-generating client SDKs or MCP tool definitions.
 
+## Multi-cluster scoping
+
+The frontend serves reports collected from many clusters into a shared S3 bucket. Every read endpoint below (and the index) accepts an optional `cluster` query parameter:
+
+- `cluster=<name>` scopes the response to a single cluster.
+- Omitting `cluster` (or `cluster=`) aggregates across all clusters.
+
+`GET /api/v1/clusters` returns the list of cluster names currently known to the frontend (`["clusterA", "clusterB", ...]`); the UI cluster selector is built from it. Image-oriented responses include a `clusters` array (the clusters running the image); resource-oriented responses include a `cluster` field.
+
 ## Read endpoints
 
 | Method | Path | Notes |
 | --- | --- | --- |
 | GET | `/api/v1/health` | Liveness probe; returns `{status, version}`. |
+| GET | `/api/v1/clusters` | List of cluster names known to the frontend. |
 | GET | `/api/v1/openapi.json` | OpenAPI 3 spec describing this API. |
-| GET | `/api/v1/` | Index summary (image vulnerability counts + compliance reports). |
+| GET | `/api/v1/` | Index summary (image vulnerability counts + compliance reports). Optional: `cluster`. |
+
+> All read endpoints below additionally accept the optional `cluster` query parameter described above.
 | GET | `/api/v1/images` | Optional: `hasfix`, `showignored`, `severity`, `os_family`, `eosl`, `cve` (repeatable). |
 | GET | `/api/v1/image` | Pass either `ref` (canonical fully-qualified ref, e.g. `index.docker.io/library/nginx:1.27@sha256:...`) or split `registry`/`repository`/`tag`/`digest`. Optional: `severity`, `hasfix`, `showignored`, `resources` (repeatable). |
 | GET | `/api/v1/configaudits` | Optional: `namespace`, `kind`. |
@@ -40,6 +52,8 @@ CVE ignores are managed under a single endpoint. Mutations always take an array 
 
 ```bash
 curl -s 'http://localhost:8080/api/v1/health'
+curl -s 'http://localhost:8080/api/v1/clusters' | jq '.'
+curl -s 'http://localhost:8080/api/v1/images?cluster=prod-1&severity=critical' | jq '.[0]'
 curl -s 'http://localhost:8080/api/v1/images?severity=critical&eosl=true' | jq '.[0]'
 curl -s 'http://localhost:8080/api/v1/images?cve=CVE-2024-1234&cve=CVE-2024-5678' | jq '.[].ref'
 curl -s 'http://localhost:8080/api/v1/image?ref=index.docker.io/library/nginx:1.27@sha256:abc...'

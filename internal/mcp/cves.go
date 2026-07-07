@@ -6,8 +6,8 @@ import (
 
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
 	"github.com/starttoaster/trivy-operator-explorer/internal/db"
-	"github.com/starttoaster/trivy-operator-explorer/internal/kube"
 	log "github.com/starttoaster/trivy-operator-explorer/internal/logger"
+	"github.com/starttoaster/trivy-operator-explorer/internal/source"
 	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 )
 
@@ -225,6 +225,7 @@ func severityRank(s string) int {
 // All fields are optional; the zero value returns every CVE in the cluster
 // sorted by pressure_desc.
 type listCVEsParams struct {
+	Cluster     string `json:"cluster,omitempty" jsonschema:"optional cluster name to scope results to; empty means aggregate across all clusters"`
 	Severity    string `json:"severity,omitempty" jsonschema:"optional severity filter (critical|high|medium|low), case-insensitive"`
 	HasFix      *bool  `json:"has_fix,omitempty" jsonschema:"when true return only CVEs with a fixed version available; when false return only those without"`
 	Class       string `json:"class,omitempty" jsonschema:"optional Trivy package class filter (typically 'os-pkgs' or 'lang-pkgs'), case-insensitive exact match"`
@@ -316,6 +317,7 @@ func sortAggregates(aggs []*cveAggregate, sortBy string) {
 // listImagesWithCVEParams encodes the inputs to the list_images_with_cve
 // MCP tool. CVEID is required; Severity is an optional defensive filter.
 type listImagesWithCVEParams struct {
+	Cluster     string `json:"cluster,omitempty" jsonschema:"optional cluster name to scope results to; empty means aggregate across all clusters"`
 	CVEID       string `json:"cve_id" jsonschema:"required CVE ID to look up (e.g. 'CVE-2023-1234'), case-insensitive"`
 	Severity    string `json:"severity,omitempty" jsonschema:"optional severity filter (critical|high|medium|low), case-insensitive"`
 	ShowIgnored bool   `json:"show_ignored,omitempty" jsonschema:"when true include occurrences that are marked as ignored in the database"`
@@ -340,11 +342,11 @@ func runListImagesWithCVE(reports *v1alpha1.VulnerabilityReportList, p listImage
 	return listImagesWithCVEResult{Found: true, CVE: res.CVEs[0]}
 }
 
-// getReportsOrError loads the vulnerability reports from the kube client and
-// returns them, along with a fallback empty result wrapper when the call
-// fails. Centralized so every CVE-oriented tool reports failures the same way.
-func getReportsOrError() (*v1alpha1.VulnerabilityReportList, error) {
-	reports, err := kube.GetVulnerabilityReportList()
+// getReportsOrError loads the vulnerability reports for the given cluster (or
+// all clusters when cluster == "") from the S3-backed report cache. Centralized
+// so every CVE-oriented tool reports failures the same way.
+func getReportsOrError(cluster string) (*v1alpha1.VulnerabilityReportList, error) {
+	reports, err := source.GetVulnerabilityReportList(cluster)
 	if err != nil {
 		log.Logger.Error("MCP: error getting VulnerabilityReports", "error", err.Error())
 		return nil, err

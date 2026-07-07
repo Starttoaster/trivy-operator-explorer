@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
+	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 )
 
 // Filters represents the available optional filters to the config audit view
@@ -41,12 +42,13 @@ func GetView(data *v1alpha1.ConfigAuditReportList, filters Filters) View {
 		}
 
 		audit := Data{
+			Cluster:   item.ObjectMeta.Labels[utils.ClusterLabel],
 			Kind:      kind,
 			Name:      name,
 			Namespace: namespace,
 		}
 
-		index, unique := view.isUnique(audit.Name, audit.Namespace, audit.Kind)
+		index, unique := view.isUnique(audit.Cluster, audit.Name, audit.Namespace, audit.Kind)
 		if unique {
 			view = append(view, audit)
 			index = len(view) - 1
@@ -78,9 +80,9 @@ func GetView(data *v1alpha1.ConfigAuditReportList, filters Filters) View {
 	return view
 }
 
-func (a View) isUnique(name, namespace, kind string) (int, bool) {
+func (a View) isUnique(cluster, name, namespace, kind string) (int, bool) {
 	for i, audit := range a {
-		if name == audit.Name && kind == audit.Kind {
+		if cluster == audit.Cluster && name == audit.Name && kind == audit.Kind {
 			return i, false
 		}
 	}

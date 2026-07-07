@@ -26,6 +26,9 @@
                             Image
                         </th>
                         <th scope="col" class="px-6 py-3">
+                            Cluster
+                        </th>
+                        <th scope="col" class="px-6 py-3">
                             Based On
                         </th>
                         <th scope="col" class="px-6 py-3">
@@ -52,6 +55,10 @@
                                 </a>
                             </div>
                         </th>
+                        <!-- Cluster column -->
+                        <td class="px-6 py-4 text-gray-900 whitespace-nowrap dark:text-white">
+                            {{ $data.ClusterList }}
+                        </td>
                         <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                             <a href="/image?{{ if $data.Registry }}registry={{ $data.Registry }}{{ end }}&repository={{ $data.Name }}&tag={{ $data.Tag }}&digest={{ $data.Digest }}{{ if $hasFix }}&hasfix=true{{ end }}{{ if $showIgnored }}&showignored=true{{ end }}" title="{{ $data.Digest }}">
                                 {{ if .OSFamily }}<span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300">{{ .OSFamily }} {{ .OSVersion }}</span>{{ end }} {{ if .OSEndOfServiceLife }}<span class="bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-red-900 dark:text-red-300">EoSL</span>{{ end }}
@@ -84,7 +91,7 @@
                     </tr>
                     <!-- Resources sub-table -->
                     <tr id="resources-{{ $data.Digest | sanitizeID }}" class="hidden">
-                        <td colspan="3" class="px-6 py-4">
+                        <td colspan="4" class="px-6 py-4">
                             <div class="relative overflow-x-auto shadow-md rounded-lg">
                                 <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
                                     <thead class="rounded-lg text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">

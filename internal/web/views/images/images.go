@@ -62,6 +62,8 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 			tag,
 			digest,
 		)
+		cluster := item.ObjectMeta.Labels[utils.ClusterLabel]
+
 		_, ok := iMap[iMapKey]
 		if ok {
 			resourceData := ResourceMetadata{
@@ -70,6 +72,9 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 				Namespace: item.ObjectMeta.Labels["trivy-operator.resource.namespace"],
 			}
 			iMap[iMapKey].Resources[resourceData] = struct{}{}
+			if cluster != "" {
+				iMap[iMapKey].Clusters[cluster] = struct{}{}
+			}
 			continue
 		}
 
@@ -99,6 +104,10 @@ func GetView(data *v1alpha1.VulnerabilityReportList, allClusterImagesMap map[str
 		}
 		image.Resources = make(map[ResourceMetadata]struct{})
 		image.Resources[resourceData] = struct{}{}
+		image.Clusters = make(map[string]struct{})
+		if cluster != "" {
+			image.Clusters[cluster] = struct{}{}
+		}
 
 		// Get ignored CVEs from database (if 'show ignored' filter is false)
 		var ignoredCVEs map[string]db.IgnoredImageVulnerability

@@ -51,6 +51,17 @@ spec:
               value: '{{ .Values.config.mcp_port }}'
             - name: TRIVY_OPERATOR_EXPLORER_DB_PATH
               value: '{{ .Values.database.mountPath }}'
+            - name: TRIVY_OPERATOR_EXPLORER_S3_BUCKET
+              value: '{{ .Values.s3.bucket }}'
+            - name: TRIVY_OPERATOR_EXPLORER_S3_PREFIX
+              value: '{{ .Values.s3.prefix }}'
+            - name: TRIVY_OPERATOR_EXPLORER_S3_REGION
+              value: '{{ .Values.s3.region }}'
+            - name: TRIVY_OPERATOR_EXPLORER_CACHE_REFRESH_INTERVAL
+              value: '{{ .Values.config.cache_refresh_interval }}'
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           volumeMounts:
             - name: database
               mountPath: {{ .Values.database.mountPath }}

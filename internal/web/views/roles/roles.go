@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/trivy-operator/pkg/apis/aquasecurity/v1alpha1"
+	"github.com/starttoaster/trivy-operator-explorer/internal/utils"
 )
 
 // Filters represents the available optional filters to the roles audit view
@@ -34,12 +35,13 @@ func GetView(data *v1alpha1.RbacAssessmentReportList, filters Filters) View {
 		}
 
 		role := Data{
+			Cluster:   item.ObjectMeta.Labels[utils.ClusterLabel],
 			Kind:      item.ObjectMeta.Labels["trivy-operator.resource.kind"],
 			Name:      name,
 			Namespace: namespace,
 		}
 
-		index, unique := r.isUniqueRole(role.Name, role.Namespace, role.Kind)
+		index, unique := r.isUniqueRole(role.Cluster, role.Name, role.Namespace, role.Kind)
 		if unique {
 			r = append(r, role)
 			index = len(r) - 1
@@ -71,9 +73,9 @@ func GetView(data *v1alpha1.RbacAssessmentReportList, filters Filters) View {
 	return r
 }
 
-func (r View) isUniqueRole(name, namespace, kind string) (int, bool) {
+func (r View) isUniqueRole(cluster, name, namespace, kind string) (int, bool) {
 	for i, role := range r {
-		if name == role.Name && namespace == role.Namespace && kind == role.Kind {
+		if cluster == role.Cluster && name == role.Name && namespace == role.Namespace && kind == role.Kind {
 			return i, false
 		}
 	}

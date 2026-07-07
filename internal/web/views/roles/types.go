@@ -5,6 +5,7 @@ type View []Data
 
 // Data data about a role and its vulnerabilities
 type Data struct {
+	Cluster                 string          `json:"cluster"`
 	Name                    string          `json:"name"`
 	Namespace               string          `json:"namespace"`
 	Kind                    string          `json:"kind"`

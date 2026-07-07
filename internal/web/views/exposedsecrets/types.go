@@ -7,6 +7,7 @@ type View []Data
 type Data struct {
 	Name      string                        `json:"name"`   // name of the image
 	Digest    string                        `json:"digest"` // sha digest of the image
+	Clusters  map[string]struct{}           `json:"-"`      // clusters running this image (serialized via custom MarshalJSON)
 	Resources map[ResourceMetadata]struct{} `json:"-"`      // data about resources using this image (serialized via custom MarshalJSON)
 	Critical  []Secret                      `json:"critical"`
 	High      []Secret                      `json:"high"`
