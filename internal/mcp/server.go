@@ -62,12 +62,19 @@ func newServer() *mcpsdk.Server {
 const serverInstructions = `Trivy Operator Explorer MCP server.
 
 Read-only and mutating tools for working with the vulnerability reports
-produced by Aqua Security's trivy-operator in a Kubernetes cluster, plus a
-persisted "ignored CVE" list.
+produced by Aqua Security's trivy-operator across one or more Kubernetes
+clusters (collected into a shared S3 bucket), plus a persisted "ignored CVE"
+list.
 
-Use the read tools (list_images, get_image, list_cves, list_images_with_cve,
-list_ignored_cves) to inspect findings, then use the mutating tools
-(ignore_cves, unignore_cves) to manage the ignore list per image.
+Use the read tools (list_clusters, list_images, get_image, list_cves,
+list_images_with_cve, list_ignored_cves) to inspect findings, then use the
+mutating tools (ignore_cves, unignore_cves) to manage the ignore list per image.
+
+Reports come from many clusters. Call list_clusters first to discover the
+available cluster names, then pass one as the optional "cluster" argument on
+list_images/get_image/list_cves/list_images_with_cve to scope results to that
+cluster. Omit "cluster" to aggregate across all clusters. The ignore list is
+global (not cluster-scoped).
 
 Every Vulnerability returned from list_images, get_image, list_cves, and
 list_images_with_cve includes the trivy classification fields "class" (e.g.

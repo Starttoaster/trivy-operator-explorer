@@ -23,6 +23,13 @@ const defaultRegistry = "index.docker.io"
 // Schemas from the Go types.
 func registerTools(s *mcpsdk.Server) {
 	mcpsdk.AddTool(s, &mcpsdk.Tool{
+		Name: "list_clusters",
+		Description: "List the cluster names whose trivy-operator reports are currently available. " +
+			"Use a returned name as the optional `cluster` argument on the other tools to scope " +
+			"results to a single cluster; omit `cluster` to aggregate across all of them.",
+	}, listClustersTool)
+
+	mcpsdk.AddTool(s, &mcpsdk.Tool{
 		Name: "list_images",
 		Description: "List every container image known to the cluster (scanned by trivy-operator " +
 			"plus any unscanned images detected via running pods). Returns per-image summary " +
@@ -77,6 +84,27 @@ func registerTools(s *mcpsdk.Server) {
 			"repository/tag, or by canonical `ref`). Idempotent: missing rows are silently skipped " +
 			"and the response reports how many rows were actually deleted.",
 	}, unignoreCVEsTool)
+}
+
+// ----- list_clusters -----
+
+// listClustersParams intentionally has no fields; list_clusters takes no input.
+type listClustersParams struct{}
+
+// listClustersResult wraps the cluster-name slice in an object so the
+// auto-generated MCP output schema has type "object", which the spec requires
+// for structured tool output.
+type listClustersResult struct {
+	Total    int      `json:"total"`
+	Clusters []string `json:"clusters"`
+}
+
+func listClustersTool(_ context.Context, _ *mcpsdk.CallToolRequest, _ listClustersParams) (*mcpsdk.CallToolResult, listClustersResult, error) {
+	clusters := source.ListClusters()
+	if clusters == nil {
+		clusters = []string{}
+	}
+	return nil, listClustersResult{Total: len(clusters), Clusters: clusters}, nil
 }
 
 // ----- list_images -----

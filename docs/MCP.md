@@ -6,7 +6,7 @@ The trivy-operator-explorer **frontend** ships a built-in [Model Context Protoco
 
 Every read tool (`list_images`, `get_image`, `list_cves`, `list_images_with_cve`) accepts an optional `cluster` input. Set it to a cluster name to scope results to that cluster, or omit it to aggregate across all clusters in the bucket. The ignore-list tools are global (not cluster-scoped), matching the sqlite schema.
 
-The tools are intentionally primitives (`list_images`, `get_image`, `list_cves`, `list_images_with_cve`, `list_ignored_cves`, `ignore_cves`, `unignore_cves`) rather than task-specific helpers. An LLM client composes them to answer ad-hoc questions; worked examples are at the bottom of this page.
+The tools are intentionally primitives (`list_clusters`, `list_images`, `get_image`, `list_cves`, `list_images_with_cve`, `list_ignored_cves`, `ignore_cves`, `unignore_cves`) rather than task-specific helpers. An LLM client composes them to answer ad-hoc questions; worked examples are at the bottom of this page.
 
 ## Configuration
 
@@ -51,6 +51,10 @@ curl -sS -H 'Content-Type: application/json' \
 ## Tool reference
 
 Each tool's full input/output JSON Schema is published over the MCP `tools/list` method. The summary below is the same `description` field returned in that listing.
+
+### `list_clusters` (read)
+
+List the cluster names whose trivy-operator reports are currently available. Call this first in a multi-cluster deployment, then pass a returned name as the optional `cluster` argument on the other read tools to scope results to that cluster (omit it to aggregate across all clusters). Takes no inputs; returns `{total, clusters}`.
 
 ### `list_images` (read)
 
