@@ -8,5 +8,7 @@ import "embed"
 
 //go:generate tailwindcss -i ./static/css/input.css -o ./static/css/output.css
 
+// Static contains all the embedded static files used by the HTTP server
+//
 //go:embed static
 var Static embed.FS
