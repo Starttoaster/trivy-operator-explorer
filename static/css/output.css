@@ -662,6 +662,10 @@ video {
   margin-bottom: 1rem;
 }
 
+.mb-1 {
+  margin-bottom: 0.25rem;
+}
+
 .mb-3 {
   margin-bottom: 0.75rem;
 }
@@ -1296,8 +1300,16 @@ video {
   text-decoration-color: #9ca3af;
 }
 
+.decoration-dotted {
+  text-decoration-style: dotted;
+}
+
 .decoration-2 {
   text-decoration-thickness: 2px;
+}
+
+.underline-offset-2 {
+  text-underline-offset: 2px;
 }
 
 .opacity-50 {
