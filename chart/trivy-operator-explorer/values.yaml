@@ -138,9 +138,9 @@ mcpIngress:
 
 resources: 
   # Change these as needed. Larger clusters with more resources may run into issues with too low of limits.
-  limits:
-    cpu: 500m
-    memory: 512Mi
+  # limits:
+  #   cpu: 500m
+  #   memory: 512Mi
   requests:
     cpu: 100m
     memory: 64Mi
