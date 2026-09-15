@@ -2,6 +2,16 @@ apiVersion: v1
 entries:
   trivy-operator-collector:
   - apiVersion: v2
+    appVersion: v1.0.1
+    created: "2026-09-15T22:01:41.759519559Z"
+    description: Collects trivy-operator scan reports from a cluster into an S3 bucket
+    digest: 58f13be1589d2f92e5f54b6dc085081315781244856eade80d1ccdbf4525abd7
+    name: trivy-operator-collector
+    type: application
+    urls:
+    - https://github.com/Starttoaster/trivy-operator-explorer/releases/download/trivy-operator-collector-0.2.2/trivy-operator-collector-0.2.2.tgz
+    version: 0.2.2
+  - apiVersion: v2
     appVersion: v1.0.0
     created: "2026-08-12T20:40:43.368370777Z"
     description: Collects trivy-operator scan reports from a cluster into an S3 bucket
@@ -32,6 +42,16 @@ entries:
     - https://github.com/Starttoaster/trivy-operator-explorer/releases/download/trivy-operator-collector-0.1.1/trivy-operator-collector-0.1.1.tgz
     version: 0.1.1
   trivy-operator-explorer:
+  - apiVersion: v2
+    appVersion: v1.0.1
+    created: "2026-09-15T22:01:41.88835315Z"
+    description: A Helm chart for Kubernetes
+    digest: 91a9056425a89c07c05b85c3123794f515fa08239706b4a529d9eb0c0f33294e
+    name: trivy-operator-explorer
+    type: application
+    urls:
+    - https://github.com/Starttoaster/trivy-operator-explorer/releases/download/trivy-operator-explorer-0.5.2/trivy-operator-explorer-0.5.2.tgz
+    version: 0.5.2
   - apiVersion: v2
     appVersion: v1.0.0
     created: "2026-08-12T20:40:43.578146326Z"
@@ -405,4 +425,4 @@ entries:
     urls:
     - https://github.com/Starttoaster/trivy-operator-explorer/releases/download/trivy-operator-explorer-server-0.1.0/trivy-operator-explorer-server-0.1.0.tgz
     version: 0.1.0
-generated: "2026-08-12T20:40:43.578561933Z"
+generated: "2026-09-15T22:01:41.888732149Z"
