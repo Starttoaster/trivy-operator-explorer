@@ -7,6 +7,6 @@ RUN go mod download
 # CGO is required for the sqlite-backed ignore list in the frontend.
 RUN CGO_ENABLED=1 go build -o /go/bin/app ./cmd/frontend
 
-FROM gcr.io/distroless/base-debian12
+FROM gcr.io/distroless/base-debian13
 COPY --from=build /go/bin/app /
 CMD ["/app"]
