@@ -49,7 +49,10 @@ var rootCmd = &cobra.Command{
 			}
 		}
 
-		st, err := store.New(context.Background(), bucket, viper.GetString("s3-prefix"), viper.GetString("s3-region"))
+		st, err := store.New(context.Background(), bucket, viper.GetString("s3-prefix"), viper.GetString("s3-region"), store.Options{
+			Endpoint:     viper.GetString("s3-endpoint"),
+			UsePathStyle: viper.GetBool("s3-use-path-style"),
+		})
 		if err != nil {
 			log.Fatal("error initializing S3 store", "error", err)
 		}
@@ -58,6 +61,8 @@ var rootCmd = &cobra.Command{
 			"cluster", clusterName,
 			"bucket", bucket,
 			"prefix", viper.GetString("s3-prefix"),
+			"endpoint", viper.GetString("s3-endpoint"),
+			"pathStyle", viper.GetBool("s3-use-path-style"),
 			"interval", viper.GetDuration("sync-interval").String(),
 		)
 
@@ -80,11 +85,13 @@ func init() {
 	rootCmd.PersistentFlags().String("s3-bucket", "", "The S3 bucket to write cluster report bundles to.")
 	rootCmd.PersistentFlags().String("s3-prefix", "", "The key prefix within the S3 bucket under which this cluster's reports are written.")
 	rootCmd.PersistentFlags().String("s3-region", "", "The AWS region of the S3 bucket. If empty, the AWS SDK default resolution is used.")
+	rootCmd.PersistentFlags().String("s3-endpoint", "", "Override the S3 endpoint URL (e.g. http://garage.garage.svc:3900) for S3-compatible stores such as MinIO or Garage. If empty, the AWS SDK default resolution is used (including AWS_ENDPOINT_URL_S3).")
+	rootCmd.PersistentFlags().Bool("s3-use-path-style", false, "Address buckets as <endpoint>/<bucket>/<key> instead of <bucket>.<endpoint>/<key>. Most self-hosted S3-compatible stores need this.")
 	rootCmd.PersistentFlags().Duration("sync-interval", 5*time.Minute, "How often to read the cluster's reports and write them to S3.")
 
 	bindings := []string{
 		"log-level", "cluster-name", "kubeconfig",
-		"s3-bucket", "s3-prefix", "s3-region", "sync-interval",
+		"s3-bucket", "s3-prefix", "s3-region", "s3-endpoint", "s3-use-path-style", "sync-interval",
 	}
 	for _, name := range bindings {
 		if err := viper.BindPFlag(name, rootCmd.PersistentFlags().Lookup(name)); err != nil {

@@ -42,6 +42,14 @@ spec:
               value: '{{ .Values.s3.prefix }}'
             - name: TRIVY_OPERATOR_COLLECTOR_S3_REGION
               value: '{{ .Values.s3.region }}'
+            {{- with .Values.s3.endpoint }}
+            - name: TRIVY_OPERATOR_COLLECTOR_S3_ENDPOINT
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if .Values.s3.usePathStyle }}
+            - name: TRIVY_OPERATOR_COLLECTOR_S3_USE_PATH_STYLE
+              value: 'true'
+            {{- end }}
             - name: TRIVY_OPERATOR_COLLECTOR_SYNC_INTERVAL
               value: '{{ .Values.config.syncInterval }}'
             {{- with .Values.extraEnv }}

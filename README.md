@@ -71,6 +71,31 @@ trivy-operator-explorer \
 trivy-operator-explorer
 ```
 
+### Using an S3-compatible store (MinIO, Garage, ...)
+
+Both apps can talk to any S3-compatible object store, not just AWS. Two optional settings control this; both default to the current AWS behavior, so existing installs are unaffected.
+
+| Chart value | Flag | Environment variable | Default |
+|---|---|---|---|
+| `s3.endpoint` | `--s3-endpoint` | `TRIVY_OPERATOR_{COLLECTOR,EXPLORER}_S3_ENDPOINT` | empty (AWS endpoints) |
+| `s3.usePathStyle` | `--s3-use-path-style` | `TRIVY_OPERATOR_{COLLECTOR,EXPLORER}_S3_USE_PATH_STYLE` | `false` |
+
+- `s3.endpoint` must be a full `http://` or `https://` URL; the apps refuse to start on anything else (e.g. a bare `host:port`). If it is empty, the AWS SDK's own resolution applies, including the `AWS_ENDPOINT_URL_S3` environment variable.
+- `s3.usePathStyle` addresses the bucket as `<endpoint>/<bucket>/<key>` instead of `<bucket>.<endpoint>/<key>`. Most self-hosted stores need this unless wildcard DNS is set up for bucket hostnames. The AWS SDK has no environment variable or config-file setting for it, which is why it is an explicit option here.
+- Set `s3.region` to whatever region your store expects (Garage's default is `garage`); the request signature must match it.
+- Credentials still come from the standard AWS credential chain. Static keys can be provided via `extraEnv` (e.g. `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` from a Secret).
+
+Example (Garage in the same cluster), for both the collector and the frontend:
+
+```bash
+--set s3.bucket=trivy-reports \
+--set s3.region=garage \
+--set s3.endpoint=http://garage.garage.svc.cluster.local:3900 \
+--set s3.usePathStyle=true
+```
+
+Some S3-compatible stores reject the AWS SDK's default request checksums. If yours does, you can optionally set `AWS_REQUEST_CHECKSUM_CALCULATION=when_required` and `AWS_RESPONSE_CHECKSUM_VALIDATION=when_required` through `extraEnv`. This is not needed for stores that accept them (Garage v2.4 accepts the defaults).
+
 ### Pre-release / unstable charts
 
 Stable charts are published from `main` to `https://starttoaster.github.io/trivy-operator-explorer`. While the two-app rework is baking on a `release/**` branch, release-candidate charts are published to a separate **unstable** channel on every push to that branch:
