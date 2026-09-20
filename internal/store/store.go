@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"path"
 	"strings"
 	"time"
@@ -92,12 +93,57 @@ type Client struct {
 	prefix string
 }
 
+// Options controls how the S3 client reaches the bucket. The zero value keeps
+// the AWS SDK defaults (AWS endpoints, virtual-hosted-style addressing), so
+// existing deployments behave exactly as before.
+type Options struct {
+	// Endpoint overrides the S3 endpoint URL (scheme + host[:port]), for
+	// S3-compatible stores such as MinIO or Garage. If empty, the SDK's own
+	// endpoint resolution applies, including the AWS_ENDPOINT_URL_S3 env var.
+	Endpoint string
+
+	// UsePathStyle addresses buckets as <endpoint>/<bucket>/<key> instead of
+	// <bucket>.<endpoint>/<key>. Most self-hosted S3-compatible stores need
+	// this unless wildcard DNS for the bucket hostnames is set up. The AWS SDK
+	// has no environment variable or shared-config setting for it.
+	UsePathStyle bool
+}
+
+// validate rejects an Endpoint the SDK would only fail on at request time
+// (typically a bare "host:port" with no scheme).
+func (o Options) validate() error {
+	if o.Endpoint == "" {
+		return nil
+	}
+	u, err := url.Parse(o.Endpoint)
+	if err != nil {
+		return fmt.Errorf("invalid s3 endpoint %q: %w", o.Endpoint, err)
+	}
+	if (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return fmt.Errorf("invalid s3 endpoint %q: must be an http:// or https:// URL, e.g. https://s3.example.com:9000", o.Endpoint)
+	}
+	return nil
+}
+
+// newS3Client builds the S3 client from an already-loaded AWS config plus opts.
+func newS3Client(cfg aws.Config, opts Options) *s3.Client {
+	return s3.NewFromConfig(cfg, func(o *s3.Options) {
+		if opts.Endpoint != "" {
+			o.BaseEndpoint = aws.String(opts.Endpoint)
+		}
+		o.UsePathStyle = opts.UsePathStyle
+	})
+}
+
 // New constructs a store client using the standard AWS credential chain
 // (environment, shared config, and in-cluster IRSA/web-identity). Region may be
 // empty to defer to the environment/instance configuration.
-func New(ctx context.Context, bucket, prefix, region string) (*Client, error) {
+func New(ctx context.Context, bucket, prefix, region string, s3opts Options) (*Client, error) {
 	if bucket == "" {
 		return nil, errors.New("s3 bucket is required")
+	}
+	if err := s3opts.validate(); err != nil {
+		return nil, err
 	}
 
 	var opts []func(*awsconfig.LoadOptions) error
@@ -110,7 +156,7 @@ func New(ctx context.Context, bucket, prefix, region string) (*Client, error) {
 	}
 
 	return &Client{
-		s3:     s3.NewFromConfig(cfg),
+		s3:     newS3Client(cfg, s3opts),
 		bucket: bucket,
 		prefix: strings.Trim(prefix, "/"),
 	}, nil

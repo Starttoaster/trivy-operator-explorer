@@ -38,9 +38,22 @@ s3:
   prefix: ''
   # Optional region. If empty, the AWS SDK default resolution is used.
   region: ''
+  # Optional S3 endpoint URL (scheme included), for S3-compatible stores such as
+  # MinIO or Garage, e.g. http://garage.garage.svc.cluster.local:3900. If empty,
+  # the AWS SDK default resolution is used (including AWS_ENDPOINT_URL_S3).
+  endpoint: ''
+  # Address buckets as <endpoint>/<bucket>/<key> instead of
+  # <bucket>.<endpoint>/<key>. Most self-hosted S3-compatible stores need this
+  # unless wildcard DNS is set up for bucket hostnames. Leave false for AWS S3.
+  usePathStyle: false
 
 # Extra environment variables to add to the frontend container (e.g. static AWS
-# credentials when not using IRSA).
+# credentials when not using IRSA). For S3-compatible stores that reject the
+# AWS SDK's default request checksums you can also set, optionally:
+#   - name: AWS_REQUEST_CHECKSUM_CALCULATION
+#     value: when_required
+#   - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+#     value: when_required
 extraEnv: []
 
 # Database volume configuration
